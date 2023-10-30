@@ -5,8 +5,8 @@ import {useRouter} from "next/navigation";
 
 const axiosParams = {
     // baseURL: 'http://64.226.125.111:8000/'
-    baseURL: 'http://95.217.124.180:8001/'
-}   
+    baseURL: 'https://ed9b-95-217-124-180.ngrok-free.app/'
+}
 
 const axiosInstance = axios.create(axiosParams);
 
