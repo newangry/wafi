@@ -10,7 +10,6 @@ const Login = () => {
     const clientSecret = "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";
     // const redirectUri = "https://wafi-api.neuracase.com/redirect";
     const redirectUri = "https://wafi-six.vercel.app/redirect";
-
     const authUrl = `https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=email%20profile`;
 
     
@@ -72,7 +71,6 @@ const Login = () => {
                   style={{
                     width: "100%",
                     height: "auto",
-
                   }}
                 />
               </div>
