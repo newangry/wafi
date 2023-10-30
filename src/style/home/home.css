@@ -1,0 +1,10 @@
+.activeNavLink{
+    color: black !important;
+    font-weight: 900;
+   
+}
+.header-background{
+    background: url("../../../public/green\ backgorund.svg") no-repeat center;
+    width:100%;
+    
+}

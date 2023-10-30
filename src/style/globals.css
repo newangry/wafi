@@ -1,0 +1,80 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@import url('https://fonts.googleapis.com/css2?  family=Montserrat:ital,wght@0,100;0,200;1,100;1,200&display=swap');
+
+body{
+    font-family: 'Montserrat', sans-serif;
+}
+.text-scroll::-webkit-scrollbar {
+    display: none;
+}
+.text-scroll{
+    resize: none;
+}
+.audio-recorder{
+    background-color: #F3F4F9 !important;
+    box-shadow: none !important;
+}
+
+
+@font-face {
+    font-family: Inter;
+    src: url('../fonts/webfonts/Inter-Regular.ttf') format('ttf');
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+  }
+  body {
+    font-family: "Inter", sans-serif;
+}
+logo {
+	position: absolute;
+	top: 30px;
+	right: 30px;
+	display: block;
+	z-index: 100;
+	transition: all 250ms linear;
+}
+
+.logo img {
+	height: 30px;
+	width: auto;
+	display: block;
+}
+/* global.css */
+
+/* Import the Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Apply Inter font to the body */
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Define other global styles */
+/* ... */
+@media (max-width: 600px) {
+	#upload {
+	  maxWidth: 90%;
+	  margin: 100px auto;
+	}
+  }
+  
+  @media (min-width: 601px) and (max-width: 1024px) {
+	#upload {
+	  maxWidth: 60%;
+	  margin: 150px auto;
+	}
+  }
+  
+  @media (min-width: 1025px) {
+	#upload {
+	  maxWidth: 30%;
+	  margin: 200px auto;
+	}
+  }
+
