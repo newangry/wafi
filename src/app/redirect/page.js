@@ -25,7 +25,7 @@ const Redirect = () => {
               window.sessionStorage.setItem("access_token", response.data.access_token);
               router.push("/panel")
           } else {
-              router.push("/login")
+              // router.push("/login")
           }
         })
         .catch((error) => {
