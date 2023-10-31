@@ -29,7 +29,7 @@ const Redirect = () => {
           }
         })
         .catch((error) => {
-            router.push("/login")
+            // router.push("/login")
         });
     } else {
 
