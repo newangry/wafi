@@ -84,7 +84,6 @@ export default function RootLayout({ children }) {
     const handleUpload = async () => {
         setUploadLoading(true)
         let formData = new FormData();
-        formData.append("pdf", selectedFiles[0]);
         try {
             const res = await api.postFile(`chats/create?title=${selectedFiles[0].name}&user_type=${user_type}`, formData)
             notify()
@@ -100,7 +99,7 @@ export default function RootLayout({ children }) {
             setUploadLoading(false)
         }
     };
-    
+
     const handleNewchat = async() => {
         try {
             const res = await api.postFile(`chats/new_chat`)

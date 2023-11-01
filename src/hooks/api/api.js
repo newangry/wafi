@@ -5,10 +5,16 @@ import {useRouter} from "next/navigation";
 
 const axiosParams = {
     // baseURL: 'http://64.226.125.111:8000/'
-    baseURL: 'https://wafi-api.onrender.com/'
+    baseURL: 'https://wafi-backend.onrender.com/'
 }
 
-const axiosInstance = axios.create(axiosParams);
+const axiosInstance = axios.create(axiosParams);    
+let user_type = localStorage.getItem("user_type")
+if(user_type == undefined || user_type == "user"){
+    user_type = "user"
+} else {
+    user_type = "admin"
+}
 
 const api = {
     get: async (url, config = {}) => {
@@ -23,7 +29,7 @@ const api = {
             return response.data
         } catch (error) {
             if (error.response.status === 401) {
-                window.location.href = "/login"
+                window.location.href = `/login/${user_type}`
             }else {
                 toast.error("the connection has error!", {
                     position: toast.POSITION.TOP_CENTER
@@ -45,7 +51,7 @@ const api = {
             return response.data
         } catch (error) {
             if (error.response.status === 401) {
-                window.location.href = "/login"
+                window.location.href = `/login/${user_type}`
             }else {
                 toast.error("the connection has error!", {
                     position: toast.POSITION.TOP_CENTER
@@ -68,7 +74,7 @@ const api = {
         } catch (error) {
 
             if (error.response.status === 401) {
-                window.location.href = "/login"
+                window.location.href = `/login/${user_type}`
             }else {
                 toast.error("the connection has error!", {
                     position: toast.POSITION.TOP_CENTER
@@ -89,7 +95,7 @@ const api = {
             return response.data
         } catch (error) {
             if (error.response.status === 401) {
-                window.location.href = "/login"
+                window.location.href = `/login/${user_type}`
             }else {
                 toast.error("the connection has error!", {
                     position: toast.POSITION.TOP_CENTER
@@ -111,7 +117,7 @@ const api = {
         } catch (error) {
 
             if (error.response.status === 401) {
-                window.location.href = "/login"
+                window.location.href = `/login/${user_type}`
             }else {
                 toast.error("the connection has error!", {
                     position: toast.POSITION.TOP_CENTER

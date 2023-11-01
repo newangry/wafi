@@ -25,8 +25,8 @@ export default function Home({ params }) {
     const [AILoading, setAILoading] = useState(false)
     const [chat, setChat] = useState()
     const [chatHistory, setChatHistory] = useState([])
-    const [robotVoice, setRobotVoice] = useState(new Audio())
-    const [isPlay, setIsPlay] = useState({index: 0, play: false})
+    const [robotVoice, setRobotVoice] = useState(false)
+    const [isPlay, setIsPlay] = useState({index: -1, play: false})
     const [voiceLoading, setVoiceLoading] = useState(false)
     const [emothion, setEmothion] = useState('Talking')
     
@@ -60,6 +60,7 @@ export default function Home({ params }) {
     }
 
     useEffect(() => {
+        setRobotVoice(new Audio())
         getChats()
     }, [])
 
@@ -212,8 +213,6 @@ export default function Home({ params }) {
             })
             robotVoice.play();
         } else{
-            robotVoice.pause();
-            if (robotVoice.paused) {
                 const res = await api.post(`chats/tts?text=${msg}`)
                 let audio = new Audio("data:audio/wav;base64," + res)
                 audio.play()
@@ -222,20 +221,22 @@ export default function Home({ params }) {
                     play: true
                 })
                 setRobotVoice(audio)
-            }
         }
             
         setVoiceLoading(false)
     }
     
     useEffect(() => {
-        robotVoice.addEventListener('ended', function() {
-            setIsPlay({
-                index,
-                play: false
-            })
-        });
-    }, [])
+        if(robotVoice){
+            robotVoice.addEventListener('ended', function() {
+                const index = isPlay.index;
+                setIsPlay({
+                    index: index,
+                    play: false
+                })
+            });
+        }
+    }, [robotVoice])
     
     const handlePauseVoice = (index) => {
         robotVoice.pause();

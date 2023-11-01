@@ -55,7 +55,7 @@ function Navbar() {
                     </ul>
                 </div>
                 <div>
-                    <Link href={"/login"}><button className="bg-[#00FFB6] hover:bg-[#11e0a6]  lg:px-4 px-3 py-2 rounded-full">MY ACCOUNT</button></Link>
+                    <Link href={"/login/user"}><button className="bg-[#00FFB6] hover:bg-[#11e0a6]  lg:px-4 px-3 py-2 rounded-full">MY ACCOUNT</button></Link>
                 </div>
                 <div className="md:hidden">
                     <button onClick={handleToggleNavbar} className="transition-all duration-900">

@@ -9,27 +9,27 @@ import { useDispatch } from 'react-redux'
 import { setCredentials } from '../../redux/auth/authSlice'
 
 const Redirect = () => {
-
     const dispatch = useDispatch()
     const searchParams = useSearchParams()
     const router = useRouter()
     useEffect(() => {
       const code = searchParams.get('code')
+      const user_type = localStorage.getItem("user_type")
     if (code) {
-      const serverEndpoint = `https://wafi-api.onrender.com/users/login/google?code=${code}`;
+      const serverEndpoint = `https://wafi-backend.onrender.com/users/login/google?code=${code}&user_type=${user_type}`;
       axios
         .get(serverEndpoint)
         .then((response) => {
           if (response.status === 200) {
               // dispatch(setCredentials({access_token:response.data.access_token}))
               window.sessionStorage.setItem("access_token", response.data.access_token);
-              router.push("/panel/user")
+              router.push(`/panel/${user_type}`)
           } else {
-              router.push("/login")
+              router.push(`/login/${user_type}`)
           }
         })
         .catch((error) => {
-            router.push("/login")
+            router.push(`/login/${user_type}`)
         });
     } else {
       
