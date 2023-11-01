@@ -100,7 +100,7 @@ export default function RootLayout({ children }) {
             setUploadLoading(false)
         }
     };
-
+    
     const handleNewchat = async() => {
         try {
             const res = await api.postFile(`chats/new_chat`)
