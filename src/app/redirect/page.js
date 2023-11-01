@@ -18,7 +18,7 @@ const Redirect = () => {
     if (code) {
       const serverEndpoint = `https://wafi-api.onrender.com/users/login/google?code=${code}`;
       axios
-        .post(serverEndpoint)
+        .get(serverEndpoint)
         .then((response) => {
           if (response.status === 200) {
               // dispatch(setCredentials({access_token:response.data.access_token}))
