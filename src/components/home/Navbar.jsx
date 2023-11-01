@@ -22,7 +22,7 @@ function Navbar() {
             <div className=" w-full h-[4.2rem] flex items-center justify-between lg:px-10 px-8 z-20">
             <div className="w-[40%] sm:w-[25%] md:w-[15%]">
                     <Link href="/">
-                        <Image src="/logo.svg" alt="logo" width={0}
+                        <Image src="/logo.png" alt="logo" width={0}
                                height={0}
                                sizes="100vw"
                                style={{width: '65%', height: 'auto'}}/>
