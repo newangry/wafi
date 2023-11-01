@@ -1,20 +1,20 @@
 "use client"
 import Image from 'next/image'
-import {Scrollbars} from 'react-custom-scrollbars';
-import {usePathname, useRouter} from "next/navigation";
-import {AiOutlinePaperClip} from "react-icons/ai"
-import {useDispatch, useSelector} from 'react-redux'
-import {toggleMenu} from '../../../../redux/sidebar/sidebarSlice'
-import {AudioRecorder} from 'react-audio-voice-recorder';
-import {useEffect, useRef, useState} from "react";
-import {toast} from "react-toastify";
+import { Scrollbars } from 'react-custom-scrollbars';
+import { usePathname, useRouter } from "next/navigation";
+import { AiOutlinePaperClip } from "react-icons/ai"
+import { useDispatch, useSelector } from 'react-redux'
+import { toggleMenu } from '../../../../redux/sidebar/sidebarSlice'
+import { AudioRecorder } from 'react-audio-voice-recorder';
+import { useEffect, useRef, useState } from "react";
+import { toast } from "react-toastify";
 import "../../../../style/spotLoading.css"
 import api from "@/hooks/api/api";
 import Tooltip from '@mui/material/Tooltip';
 import "../../../../style/smallSpinner.css"
 import { EMOTHIONS } from '@/utils/const';
 
-export default function Home({params}) {
+export default function Home({ params }) {
     const user_type = params.user_type;
     const router = useRouter()
     const pathname = usePathname()
@@ -26,16 +26,10 @@ export default function Home({params}) {
     const [chat, setChat] = useState()
     const [chatHistory, setChatHistory] = useState([])
     const [robotVoice, setRobotVoice] = useState(new Audio())
-    const [isPlay, setIsPlay] = useState(false)
+    const [isPlay, setIsPlay] = useState({index: 0, play: false})
     const [voiceLoading, setVoiceLoading] = useState(false)
     const [emothion, setEmothion] = useState('Talking')
-    const handleBack = () => {
-        router.push('/panel')
-        if (window.innerWidth < 768) {
-            dispatch(toggleMenu())
-        }
-    }
-
+    
     useEffect(() => {
         scrollbars.current.scrollToBottom()
     }, [chatHistory]);
@@ -48,13 +42,13 @@ export default function Home({params}) {
             if (res.chat_history !== null) {
                 setChatHistory(res?.chat_history)
                 const chat_history = res.chat_history;
-                if(chat_history.length > 0) {
-                    const _emothion = chat_history[chat_history.length-1].AI.emotion
-                    handlePlayVoice(chat_history[chat_history.length-1].AI.message)
-                    if(EMOTHIONS.filter((item) => item == _emothion).length > 0) {
+                if (chat_history.length > 0) {
+                    const _emothion = chat_history[chat_history.length - 1].AI.emotion
+                    handlePlayVoice(chat_history[chat_history.length - 1].AI.message, chat_history.length - 1)
+                    if (EMOTHIONS.filter((item) => item == _emothion).length > 0) {
                         setEmothion(_emothion)
                     }
-                } else if(chat_history == 1){
+                } else if (chat_history == 1) {
                     router.push(`/panel/${user_type}/${res.ID}`)
                 }
             }
@@ -116,7 +110,7 @@ export default function Home({params}) {
         formData.append("audio", "")
 
         try {
-            await api.postFile(`chats/new_message?chat_id=${params.id}&input_type=text&output_type=text&new_message=${mag}`, formData)
+            await api.postFile(`chats/new_message?chat_id=${params.id}&input_type=text&output_type=text&new_message=${mag}&user_type=${user_type}`, formData)
             getChats()
         } catch (err) {
             console.log(err)
@@ -125,23 +119,23 @@ export default function Home({params}) {
             });
         }
     }
-
-    const renderView = ({style, ...reset}) => {
+    
+    const renderView = ({ style, ...reset }) => {
         const customStyle = {
             marginRight: '-19px',
             right: '2px',
             overflowX: "hidden"
         };
-        return <div {...reset} style={{...style, ...customStyle}}/>;
+        return <div {...reset} style={{ ...style, ...customStyle }} />;
     };
 
-    const renderThumbVertical = ({style, ...reset}) => {
+    const renderThumbVertical = ({ style, ...reset }) => {
         const thumbStyle = {
             borderRadius: 6,
             backgroundColor: '#F1F2F6',
             right: '2px',
         };
-        return <div style={{...style, ...thumbStyle}} {...reset} />;
+        return <div style={{ ...style, ...thumbStyle }} {...reset} />;
     };
 
     const renderTrackVertical = () => {
@@ -155,15 +149,15 @@ export default function Home({params}) {
             top: '2px',
             borderRadius: '3px',
         };
-        return <div style={thumbStyle}/>;
+        return <div style={thumbStyle} />;
     };
 
-    const renderThumbHorizontal = ({style, ...reset}) => {
+    const renderThumbHorizontal = ({ style, ...reset }) => {
         const thumbStyle = {
             borderRadius: 6,
             backgroundColor: '#F1F2F6',
         };
-        return <div style={{...style, ...thumbStyle}} {...reset} />;
+        return <div style={{ ...style, ...thumbStyle }} {...reset} />;
     };
     const addLoadingMassageVoice = () => {
         let date = new Date().toJSON();
@@ -200,7 +194,7 @@ export default function Home({params}) {
             setAILoading(false)
             scrollbars.current.scrollToBottom()
         }
-        
+
         const url = URL.createObjectURL(blob);
         const audio = document.createElement('audio');
         audio.src = url;
@@ -209,19 +203,46 @@ export default function Home({params}) {
     const handleUpdate = () => {
         scrollbars.current.scrollToBottom()
     }
-    const handlePlayVoice = async (msg) => {
+    const handlePlayVoice = async (msg, index) => {
         setVoiceLoading(true)
-        if (robotVoice.paused) {
-            const res = await api.post(`chats/tts?text=${msg}`)
-            let audio = new Audio("data:audio/wav;base64," + res)
-            audio.play()
-            setRobotVoice(audio)
+        if(index == isPlay.index){
+            setIsPlay({
+                index,
+                play: true
+            })
+            robotVoice.play();
+        } else{
+            robotVoice.pause();
+            if (robotVoice.paused) {
+                const res = await api.post(`chats/tts?text=${msg}`)
+                let audio = new Audio("data:audio/wav;base64," + res)
+                audio.play()
+                setIsPlay({
+                    index,
+                    play: true
+                })
+                setRobotVoice(audio)
+            }
         }
+            
         setVoiceLoading(false)
     }
-
-    const handlePauseVoice = () => {
-        robotVoice.play()
+    
+    useEffect(() => {
+        robotVoice.addEventListener('ended', function() {
+            setIsPlay({
+                index,
+                play: false
+            })
+        });
+    }, [])
+    
+    const handlePauseVoice = (index) => {
+        robotVoice.pause();
+        setIsPlay({
+            index,
+            play: false
+        })
     }
 
     return (
@@ -231,25 +252,25 @@ export default function Home({params}) {
                 <div className="flex justify-center">
                     <div className="w-[17%] rounded-[0.5rem]">
                         {
-                               <Image src={`/Animations/${emothion}.svg`} 
-                               alt="costumer" width={0}
-                               height={0}
-                               sizes="100vw"
-                               style={{width: '100%', height: 'auto', objectFit: "cover"}}/>
+                            <Image src={`/Animations/${emothion}.svg`}
+                                alt="costumer" width={0}
+                                height={0}
+                                sizes="100vw"
+                                style={{ width: '100%', height: 'auto', objectFit: "cover" }} />
                         }
-                        
+
                     </div>
                 </div>
             </header>
             <Scrollbars autoHide
-                        ref={scrollbars}
-                        className="scroll-bar pb-10"
-                        autoHideTimeout={500}
-                        autoHideDuration={200}
-                        renderView={renderView}
-                        renderThumbHorizontal={renderThumbHorizontal}
-                        renderThumbVertical={renderThumbVertical}
-                        renderTrackVertical={renderTrackVertical}>
+                ref={scrollbars}
+                className="scroll-bar pb-10"
+                autoHideTimeout={500}
+                autoHideDuration={200}
+                renderView={renderView}
+                renderThumbHorizontal={renderThumbHorizontal}
+                renderThumbVertical={renderThumbVertical}
+                renderTrackVertical={renderTrackVertical}>
 
                 {/* <div className="flex justify-center">
                     <div className="w-[17%] rounded-[0.5rem]">
@@ -260,19 +281,19 @@ export default function Home({params}) {
                     </div>
                 </div> */}
                 {
-                    chatHistory?.map((massage) => (
+                    chatHistory?.map((massage, index) => (
                         <div>
                             <div className="flex justify-end">
                                 <div className="flex flex-row-reverse mx-8 my-5 w-[80%] md:w-[50%]">
                                     <div className="mx-2">
                                         <div className="w-[2rem] rounded-[0.5rem]">
                                             <Image src="/img.png" alt="costumer" width={0}
-                                                   height={0}
-                                                   sizes="100vw"
-                                                   style={{width: '100%', height: 'auto', objectFit: "cover"}}/>
-                                            
+                                                height={0}
+                                                sizes="100vw"
+                                                style={{ width: '100%', height: 'auto', objectFit: "cover" }} />
+
                                         </div>
-                                        
+
                                     </div>
                                     <div>
                                         <div className="flex flex-row-reverse items-center">
@@ -280,7 +301,7 @@ export default function Home({params}) {
                                                 Me
                                             </h2>
                                             <span className="mx-2 text-[#8083A3] text-[0.7rem]">
-                                               {massage.Human.date?.substring(11, 16)}
+                                                {massage.Human.date?.substring(11, 16)}
                                             </span>
                                         </div>
                                         <div className="mt-2">
@@ -298,9 +319,9 @@ export default function Home({params}) {
                                             className="hover:bg-[#EAFFF6] bg-mainGreen px-1 py-[0.3rem] rounded-[0.5rem] border border-solid border-2 border-[#ECEEF5]">
                                             <div className="w-6">
                                                 <Image src="/smallHead.svg" alt="costumer" width={0}
-                                                       height={0}
-                                                       sizes="100vw"
-                                                       style={{width: '100%', height: 'auto'}}/>
+                                                    height={0}
+                                                    sizes="100vw"
+                                                    style={{ width: '100%', height: 'auto' }} />
                                             </div>
                                         </div>
                                     </div>
@@ -323,43 +344,61 @@ export default function Home({params}) {
                                                     {
                                                         voiceLoading ? (
                                                             <span className="loaderSmall"></span>
-                                                        ) : (
+                                                        ) : isPlay.index == index?
+                                                             !isPlay.play? (
                                                             <Tooltip title="play the voice" arrow>
                                                                 <button onClick={() => {
-                                                                    handlePlayVoice(massage?.AI?.message)
+                                                                    handlePlayVoice(massage?.AI?.message, index)
                                                                 }}>
                                                                     <svg xmlns="http://www.w3.org/2000/svg" width="23"
-                                                                         height="23" fill="currentColor"
-                                                                         className="bi bi-play-circle"
-                                                                         viewBox="0 0 16 16">
+                                                                        height="23" fill="currentColor"
+                                                                        className="bi bi-play-circle"
+                                                                        viewBox="0 0 16 16">
                                                                         <path
-                                                                            d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                                                            d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
                                                                         <path
-                                                                            d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/>
+                                                                            d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z" />
                                                                     </svg>
                                                                 </button>
                                                             </Tooltip>
-                                                        )
+                                                        ):
+                                                        <Tooltip title="pause the voice" arrow>
+                                                            <button onClick={() => {
+                                                                handlePauseVoice(index)
+                                                            }}>
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="23"
+                                                                    height="23" viewBox="0 0 256 256">
+                                                                    <rect width="256" height="256" fill="none" />
+                                                                    <circle cx="128" cy="128" r="96" fill="none"
+                                                                        stroke="#000" stroke-linecap="round"
+                                                                        stroke-linejoin="round" stroke-width="12" />
+                                                                    <line x1="104" y1="96" x2="104" y2="160" fill="none"
+                                                                        stroke="#000" stroke-linecap="round"
+                                                                        stroke-linejoin="round" stroke-width="12" />
+                                                                    <line x1="152" y1="96" x2="152" y2="160" fill="none"
+                                                                        stroke="#000" stroke-linecap="round"
+                                                                        stroke-linejoin="round" stroke-width="12" />
+                                                                </svg>
+                                                            </button>
+                                                        </Tooltip>
+                                                        :
+                                                        <Tooltip title="play the voice" arrow>
+                                                                <button onClick={() => {
+                                                                    handlePlayVoice(massage?.AI?.message, index)
+                                                                }}>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="23"
+                                                                        height="23" fill="currentColor"
+                                                                        className="bi bi-play-circle"
+                                                                        viewBox="0 0 16 16">
+                                                                        <path
+                                                                            d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                                                        <path
+                                                                            d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z" />
+                                                                    </svg>
+                                                                </button>
+                                                        </Tooltip>
                                                     }
-                                                    {/*<Tooltip title="pause the voice" arrow>*/}
-                                                    {/*    <button onClick={() => {*/}
-                                                    {/*        handlePauseVoice()*/}
-                                                    {/*    }}>*/}
-                                                    {/*        <svg xmlns="http://www.w3.org/2000/svg" width="23"*/}
-                                                    {/*             height="23" viewBox="0 0 256 256">*/}
-                                                    {/*            <rect width="256" height="256" fill="none"/>*/}
-                                                    {/*            <circle cx="128" cy="128" r="96" fill="none"*/}
-                                                    {/*                    stroke="#000" stroke-linecap="round"*/}
-                                                    {/*                    stroke-linejoin="round" stroke-width="12"/>*/}
-                                                    {/*            <line x1="104" y1="96" x2="104" y2="160" fill="none"*/}
-                                                    {/*                  stroke="#000" stroke-linecap="round"*/}
-                                                    {/*                  stroke-linejoin="round" stroke-width="12"/>*/}
-                                                    {/*            <line x1="152" y1="96" x2="152" y2="160" fill="none"*/}
-                                                    {/*                  stroke="#000" stroke-linecap="round"*/}
-                                                    {/*                  stroke-linejoin="round" stroke-width="12"/>*/}
-                                                    {/*        </svg>*/}
-                                                    {/*    </button>*/}
-                                                    {/*</Tooltip>*/}
+
                                                 </div>
                                             </div>
                                         </div>
@@ -376,7 +415,7 @@ export default function Home({params}) {
                     <textarea value={massage} onChange={(e) => {
                         setMassage(e.target.value)
                     }} placeholder="Type to add your message..."
-                              className="text-scroll  w-full focus:outline-none py-5 focus:border-none"/>
+                        className="text-scroll  w-full focus:outline-none py-5 focus:border-none" />
                 </div>
                 <div className="flex gap-4 items-center justify-between">
                     <AudioRecorder
@@ -389,17 +428,17 @@ export default function Home({params}) {
                         downloadFileExtension="mp3"
                         mediaRecorderOptions={{
                             audioBitsPerSecond: 128000,
-                        }}/>
+                        }} />
                     <button>
-                        <AiOutlinePaperClip className="text-[#C9C9C9] text-[1.6rem]"/>
+                        <AiOutlinePaperClip className="text-[#C9C9C9] text-[1.6rem]" />
                     </button>
                     <button disabled={massage === "" || AILoading} onClick={handleSendMassage}
-                            className="disabled:bg-[#EAFFF6] hover:bg-[#EAFFF6] bg-mainGreen px-3 py-3 rounded-[0.5rem] border border-solid border-2 border-[#ECEEF5]">
+                        className="disabled:bg-[#EAFFF6] hover:bg-[#EAFFF6] bg-mainGreen px-3 py-3 rounded-[0.5rem] border border-solid border-2 border-[#ECEEF5]">
                         <div className="w-6">
                             <Image src="/send.svg" alt="costumer" width={0}
-                                   height={0}
-                                   sizes="100vw"
-                                   style={{width: '100%', height: 'auto'}}/>
+                                height={0}
+                                sizes="100vw"
+                                style={{ width: '100%', height: 'auto' }} />
                         </div>
                     </button>
                 </div>
