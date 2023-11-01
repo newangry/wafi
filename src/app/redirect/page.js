@@ -16,7 +16,7 @@ const Redirect = () => {
     useEffect(() => {
       const code = searchParams.get('code')
     if (code) {
-      const serverEndpoint = `http://localhost:8000/users/login/google?code=${code}`;
+      const serverEndpoint = `https://wafi-api.onrender.com/users/login/google?code=${code}`;
       axios
         .post(serverEndpoint)
         .then((response) => {
