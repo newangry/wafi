@@ -50,6 +50,7 @@ export default function Home({params}) {
                 const chat_history = res.chat_history;
                 if(chat_history.length > 0) {
                     const _emothion = chat_history[chat_history.length-1].AI.emotion
+                    handlePlayVoice(chat_history[chat_history.length-1].AI.message)
                     if(EMOTHIONS.filter((item) => item == _emothion).length > 0) {
                         setEmothion(_emothion)
                     }
