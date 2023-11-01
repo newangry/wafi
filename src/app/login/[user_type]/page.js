@@ -11,7 +11,7 @@ const Login = ({params}) => {
       "120362233982-h7gv79n7ap48v7k9s9t8kqml00auhbo4.apps.googleusercontent.com";
     // const clientSecret = "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";
     const clientSecret = "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";
-    const redirectUri = "http://localhost:3000/redirect";
+    const redirectUri = "https://wafi-six.vercel.app/redirect";
     const authUrl = `https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=email%20profile`;
     window.location.href = authUrl;
   };
