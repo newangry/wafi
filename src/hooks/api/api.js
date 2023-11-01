@@ -5,7 +5,7 @@ import {useRouter} from "next/navigation";
 
 const axiosParams = {
     // baseURL: 'http://64.226.125.111:8000/'
-    baseURL: 'https://fdb5-95-217-124-180.ngrok-free.app/'
+    baseURL: 'http://localhost:8000/'
 }
 
 const axiosInstance = axios.create(axiosParams);
@@ -91,7 +91,7 @@ const api = {
             if (error.response.status === 401) {
                 window.location.href = "/login"
             }else {
-                toast.error("the connection has errrrrrrror!", {
+                toast.error("the connection has error!", {
                     position: toast.POSITION.TOP_CENTER
                 });
             }

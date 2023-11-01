@@ -16,23 +16,23 @@ const Redirect = () => {
     useEffect(() => {
       const code = searchParams.get('code')
     if (code) {
-      const serverEndpoint = `https://fdb5-95-217-124-180.ngrok-free.app/users/login/google?code=${code}`;
+      const serverEndpoint = `http://localhost:8000/users/login/google?code=${code}`;
       axios
         .post(serverEndpoint)
         .then((response) => {
           if (response.status === 200) {
               // dispatch(setCredentials({access_token:response.data.access_token}))
               window.sessionStorage.setItem("access_token", response.data.access_token);
-              router.push("/panel")
+              router.push("/panel/user")
           } else {
-              // router.push("/login")
+              router.push("/login")
           }
         })
         .catch((error) => {
-            // router.push("/login")
+            router.push("/login")
         });
     } else {
-
+      
     }
   }, []);
 

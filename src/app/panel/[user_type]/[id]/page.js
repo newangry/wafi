@@ -4,16 +4,18 @@ import {Scrollbars} from 'react-custom-scrollbars';
 import {usePathname, useRouter} from "next/navigation";
 import {AiOutlinePaperClip} from "react-icons/ai"
 import {useDispatch, useSelector} from 'react-redux'
-import {toggleMenu} from '../../../redux/sidebar/sidebarSlice'
+import {toggleMenu} from '../../../../redux/sidebar/sidebarSlice'
 import {AudioRecorder} from 'react-audio-voice-recorder';
 import {useEffect, useRef, useState} from "react";
 import {toast} from "react-toastify";
-import "../../../style/spotLoading.css"
+import "../../../../style/spotLoading.css"
 import api from "@/hooks/api/api";
 import Tooltip from '@mui/material/Tooltip';
-import "../../../style/smallSpinner.css"
+import "../../../../style/smallSpinner.css"
+import { EMOTHIONS } from '@/utils/const';
 
 export default function Home({params}) {
+    const user_type = params.user_type;
     const router = useRouter()
     const pathname = usePathname()
     const scrollbars = useRef(null)
@@ -26,6 +28,7 @@ export default function Home({params}) {
     const [robotVoice, setRobotVoice] = useState(new Audio())
     const [isPlay, setIsPlay] = useState(false)
     const [voiceLoading, setVoiceLoading] = useState(false)
+    const [emothion, setEmothion] = useState('Talking')
     const handleBack = () => {
         router.push('/panel')
         if (window.innerWidth < 768) {
@@ -44,6 +47,15 @@ export default function Home({params}) {
             setChat(res)
             if (res.chat_history !== null) {
                 setChatHistory(res?.chat_history)
+                const chat_history = res.chat_history;
+                if(chat_history.length > 0) {
+                    const _emothion = chat_history[chat_history.length-1].AI.emotion
+                    if(EMOTHIONS.filter((item) => item == _emothion).length > 0) {
+                        setEmothion(_emothion)
+                    }
+                } else if(chat_history == 1){
+                    router.push(`/panel/${user_type}/${res.ID}`)
+                }
             }
         } catch (err) {
             toast.error("the connection has error !", {
@@ -75,9 +87,7 @@ export default function Home({params}) {
 
     const handleSendMassage = async () => {
         setAILoading(true)
-
         addLoadingMassage(massage)
-
         const newMassage = massage
         setMassage("")
 
@@ -85,9 +95,10 @@ export default function Home({params}) {
         formData.append("audio", "")
 
         try {
-            await api.postFile(`chats/new_message?chat_id=${params.id}&input_type=text&output_type=text&new_message=${newMassage}`, formData)
+            await api.postFile(`chats/new_message?chat_id=${params.id}&input_type=text&output_type=text&new_message=${newMassage}&user_type=${user_type}`, formData)
             getChats()
         } catch (err) {
+            console.log(err);
             toast.error("Has Error !", {
                 position: toast.POSITION.TOP_CENTER
             });
@@ -218,10 +229,14 @@ export default function Home({params}) {
                 className="px-5 md:px-10">
                 <div className="flex justify-center">
                     <div className="w-[17%] rounded-[0.5rem]">
-                        <Image src="/Animations/Wink.svg" alt="costumer" width={0}
+                        {
+                               <Image src={`/Animations/${emothion}.svg`} 
+                               alt="costumer" width={0}
                                height={0}
                                sizes="100vw"
                                style={{width: '100%', height: 'auto', objectFit: "cover"}}/>
+                        }
+                        
                     </div>
                 </div>
             </header>
@@ -254,7 +269,9 @@ export default function Home({params}) {
                                                    height={0}
                                                    sizes="100vw"
                                                    style={{width: '100%', height: 'auto', objectFit: "cover"}}/>
+                                            
                                         </div>
+                                        
                                     </div>
                                     <div>
                                         <div className="flex flex-row-reverse items-center">
@@ -289,7 +306,7 @@ export default function Home({params}) {
                                     <div>
                                         <div className="flex  items-center">
                                             <h2 className="font-bold text-[0.9rem] text-textGray">
-                                                Wafi
+                                                WAFI
                                             </h2>
                                             <span className="mx-2 text-[#8083A3] text-[0.7rem]">
                                                 {massage.AI.date?.substring(11, 16)}

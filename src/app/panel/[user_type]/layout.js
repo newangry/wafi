@@ -1,10 +1,10 @@
 "use client"
 import Link from "next/link";
-import {usePathname, useRouter} from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Scrollbars } from 'react-custom-scrollbars';
 import { useSelector, useDispatch } from 'react-redux'
-import { toggleMenu } from '../../redux/sidebar/sidebarSlice'
-import {useEffect} from "react";
+import { toggleMenu } from '../../../redux/sidebar/sidebarSlice'
+import { useEffect } from "react";
 import React, { useState } from "react";
 import Button from "@mui/material/Button";
 import Modal from "@mui/material/Modal";
@@ -15,15 +15,16 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import axios from "axios";
-import "../../style/spinnerLoaging.css"
+import "../../../style/spinnerLoaging.css"
 import api from "@/hooks/api/api";
-
-export default function RootLayout({children}) {
+export default function RootLayout({ children }) {
     const router = useRouter()
+
+    const user_type = children.props.segmentPath[3][1];
 
     const [open, setOpen] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState([]);
-    const [chats,setChats] = useState([])
+    const [chats, setChats] = useState([])
     const [uploadLoading, setUploadLoading] = useState(false)
     const notify = () => {
         toast.success("The file was sent successfully !", {
@@ -31,20 +32,20 @@ export default function RootLayout({children}) {
         });
     }
 
-    const getChats = async ()=>{
+    const getChats = async () => {
         try {
-            const res = await api.get("chats")
+            const res = await api.get(`chats?user_type=${user_type}`)
             setChats(res)
-        }catch (err){
+        } catch (err) {
             toast.error("the connection has error !", {
                 position: toast.POSITION.TOP_CENTER
             });
         }
     }
 
-    useEffect(()=>{
+    useEffect(() => {
         getChats()
-    },[])
+    }, [])
 
     const handleAddFile = (event) => {
         const files = event.target.files;
@@ -83,52 +84,68 @@ export default function RootLayout({children}) {
     const handleUpload = async () => {
         setUploadLoading(true)
         let formData = new FormData();
-        formData.append("pdf", selectedFiles[0]);
         try {
-            const res = await api.postFile(`chats/create?title=${selectedFiles[0].name}`,formData)
+            const res = await api.postFile(`chats/create?title=${selectedFiles[0].name}&user_type=${user_type}`, formData)
             notify()
             handleClose();
             getChats()
-            router.push(`/panel/${res.ID}`)
-        }catch (err){
+            router.push(`/panel/${user_type}/${params.id}`)
+        } catch (err) {
             console.log(err)
             toast.error("the connection has error !", {
                 position: toast.POSITION.TOP_CENTER
             });
-        }finally {
+        } finally {
             setUploadLoading(false)
         }
     };
 
+    const handleNewchat = async() => {
+        try {
+            const res = await api.postFile(`chats/new_chat`)
+            notify()
+            handleClose();
+            getChats()
+            router.push(`/panel/${user_type}/${res.ID}`)
+        } catch (err) {
+            console.log(err)
+            toast.error("the connection has error !", {
+                position: toast.POSITION.TOP_CENTER
+            });
+        } finally {
+            setUploadLoading(false)
+        }
+    }
+
     const isOpen = useSelector((state) => state.sidebar.isOpen)
     const dispatch = useDispatch()
-    const [menuStyle,setMenuStyle] = useState({
-        display:'block'
+    const [menuStyle, setMenuStyle] = useState({
+        display: 'block'
     })
-    const [chatStyle,setChatStyle] = useState({
-        display:'block'
+    const [chatStyle, setChatStyle] = useState({
+        display: 'block'
     })
-    useEffect(()=>{
-        if(window.innerWidth > 768){
-            setMenuStyle({display:'block'})
-            setChatStyle({display: 'block'})
-        }else {
-            if(isOpen){
-                setMenuStyle({display:'block'})
-                setChatStyle({display: 'none'})
-            }else {
-                setMenuStyle({display:'none'})
-                setChatStyle({display: 'block'})
+    useEffect(() => {
+        if (window.innerWidth > 768) {
+            setMenuStyle({ display: 'block' })
+            setChatStyle({ display: 'block' })
+        } else {
+            if (isOpen) {
+                setMenuStyle({ display: 'block' })
+                setChatStyle({ display: 'none' })
+            } else {
+                setMenuStyle({ display: 'none' })
+                setChatStyle({ display: 'block' })
             }
         }
-    },[isOpen])
+    }, [isOpen])
 
     const pathname = usePathname()
     const renderView = ({ style, ...reset }) => {
         const customStyle = {
             marginRight: '-19px',
             right: '2px',
-            overflowX:"hidden"
+            overflowX: "hidden"
         };
         return <div {...reset} style={{ ...style, ...customStyle }} />;
     };
@@ -164,8 +181,8 @@ export default function RootLayout({children}) {
         return <div style={{ ...style, ...thumbStyle }} {...reset} />;
     };
 
-    const handleLink = () =>{
-        if(window.innerWidth < 768){
+    const handleLink = () => {
+        if (window.innerWidth < 768) {
             dispatch(toggleMenu())
         }
     }
@@ -174,62 +191,93 @@ export default function RootLayout({children}) {
         <div className="md:flex">
             <div className="overflow-hidden h-screen w-full md:w-[32%] p-5 pb-20  border border-solid border-1 border-neutral-300" style={menuStyle}>
                 <div className="m-2">
-                    <button onClick={handleOpen}
+                    <button onClick={user_type == "admin"? handleOpen:handleNewchat}
                         className="text-center w-full py-4 border border-solid border-1 border-neutral-300 rounded hover:bg-mainGreen hover-border-none">
                         + New chat
                     </button>
                 </div>
-                <Scrollbars autoHide
-                            className="scroll-bar"
-                            autoHideTimeout={500}
-                            autoHideDuration={200}
-                            renderView={renderView}
-                            renderThumbHorizontal={renderThumbHorizontal}
-                            renderThumbVertical={renderThumbVertical}
-                            renderTrackVertical={renderTrackVertical}>
-                    <ul className="overflow-hidden mt-5 flex flex-col gap-2">
-                        {
-                            chats?.map((chat,index)=>(
-                                <li>
-                                    <Link href={`/panel/${chat.ID}`}  onClick={handleLink}>
-                                        <div
-                                            className={pathname === "panel/12" ? "px-2 py-4 hover:bg-[#EAFFF6]" : "px-2 py-4 hover:bg-[#EAFFF6]"}>
-                                            <div className="flex justify-between">
-                                                <div className="w-[20%] flex justify-center items-start">
-                                                    <div className="w-[70%]">
-                                                        <Image src="/pdf.png" alt="costumer" width={0}
-                                                               height={0}
-                                                               sizes="100vw"
-                                                               style={{width: '100%', height: 'auto'}}/>
-                                                    </div>
-                                                </div>
-                                                <div className="w-[60%]">
-                                                    <div className="flex items-center">
-                                                        <h2 className="font-bold text-[0.9rem] text-textGray">
-                                                            {chat.Title}
-                                                        </h2>
-                                                        <span className="ml-2 text-[#8083A3] text-[0.7rem]">{chat.DateCreated.substring(11,16 )}</span>
-                                                    </div>
-                                                    <div className="">
-                                                        <p className="text-[#8083A3] text-[0.8rem]">
-                                                            Lorem Ipsum is simply dummy text of the printing
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-1 w-[15%] flex justify-center items-start">
-                                        <span
-                                            className="flex items-center font-bold text-[#8083A3] border border-solid border-2 border-[#ECEEF5] px-2 py-1 text-center rounded">
-                                            ...
-                                        </span>
-                                                </div>
+                {
+
+                    <Scrollbars autoHide
+                        className="scroll-bar"
+                        autoHideTimeout={500}
+                        autoHideDuration={200}
+                        renderView={renderView}
+                        renderThumbHorizontal={renderThumbHorizontal}
+                        renderThumbVertical={renderThumbVertical}
+                        renderTrackVertical={renderTrackVertical}>
+                        <ul className="overflow-hidden mt-5 flex flex-col gap-2">
+                            {
+                                chats?.map((chat, index) => (
+                                    <li>
+                                        <Link href={`/panel/${user_type}/${chat.ID}`} onClick={handleLink}>
+                                            <div
+                                                className={pathname === "panel/12" ? "px-2 py-4 hover:bg-[#EAFFF6]" : "px-2 py-4 hover:bg-[#EAFFF6]"}>
+                                                {
+                                                    user_type == "admin" ?
+                                                        <div className="flex justify-between">
+                                                            <div className="w-[20%] flex justify-center items-start">
+                                                                <div className="w-[70%]">
+                                                                    <Image src="/pdf.png" alt="costumer" width={0}
+                                                                        height={0}
+                                                                        sizes="100vw"
+                                                                        style={{ width: '100%', height: 'auto' }} />
+                                                                </div>
+                                                            </div>
+                                                            <div className="w-[60%]">
+                                                                <div className="flex items-center">
+                                                                    <h2 className="font-bold text-[0.9rem] text-textGray">
+                                                                        {chat.Title}
+                                                                    </h2>
+                                                                    <span className="ml-2 text-[#8083A3] text-[0.7rem]">{chat.DateCreated.substring(11, 16)}</span>
+                                                                </div>
+                                                                <div className="">
+                                                                    <p className="text-[#8083A3] text-[0.8rem]">
+                                                                        Lorem Ipsum is simply dummy text of the printing
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-1 w-[15%] flex justify-center items-start">
+                                                                <span
+                                                                    className="flex items-center font-bold text-[#8083A3] border border-solid border-2 border-[#ECEEF5] px-2 py-1 text-center rounded">
+                                                                    ...
+                                                                </span>
+                                                            </div>
+                                                        </div> :
+
+                                                        <div className="flex justify-between">
+                                                            <div className="w-[85%]">
+                                                                <div className="flex items-center">
+                                                                    <h2 className="font-bold text-[0.9rem] text-textGray">
+                                                                        {
+                                                                            chat.message == ""?"Please chat with WAFI":chat.message
+                                                                        }
+                                                                    </h2>
+                                                                    <span className="ml-2 text-[#8083A3] text-[0.7rem]">{chat.date.substring(11, 16)}</span>
+                                                                </div>
+                                                                <div className="">
+                                                                    <p className="text-[#8083A3] text-[0.8rem]">
+                                                                        Lorem Ipsum is simply dummy text of the printing
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-1 w-[15%] flex justify-center items-start">
+                                                                <span
+                                                                    className="flex items-center font-bold text-[#8083A3] border border-solid border-2 border-[#ECEEF5] px-2 py-1 text-center rounded">
+                                                                    ...
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                }
+
                                             </div>
-                                        </div>
-                                    </Link>
-                                </li>
-                            ))
-                        }
-                    </ul>
-                </Scrollbars>
+                                        </Link>
+                                    </li>
+                                ))
+                            }
+                        </ul>
+                    </Scrollbars>
+                }
                 <div>
                     <Modal
                         open={open}
@@ -242,13 +290,14 @@ export default function RootLayout({children}) {
                                 top: "50%",
                                 left: "50%",
                                 transform: "translate(-50%, -50%)",
-                                width:'70%',
-                                height:'65vh',
+                                width: '70%',
+                                height: '65vh',
                                 maxHeight: "100vh",
                                 bgcolor: "#fcfcfa",
                                 boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.5)",
                                 p: 4,
-                                textAlign: "center",}}>
+                                textAlign: "center",
+                            }}>
                             {selectedFiles.length > 0 ? (
                                 <div className="bg-[#f7f6f2] border-2 border-[#00FFB6] w-full h-full flex flex-col justify-center mx-auto rounded-3xl">
                                     <Typography id="modal-description" sx={{ mb: 2 }}>
@@ -257,25 +306,25 @@ export default function RootLayout({children}) {
                                     <ul>
                                         {selectedFiles.map((file, index) => (
                                             <li className="text-[#4a4646]" key={index}>
-                                                <DoneAllIcon/> {file.name}
+                                                <DoneAllIcon /> {file.name}
                                             </li>
                                         ))}
                                     </ul>
                                     {uploadLoading && <div className="flex justify-center z-10">
                                         <span className="loader"></span>
-                                        </div>}
+                                    </div>}
                                     <div className="gap-3 mt-5 mb-5">
                                         <Button
                                             onClick={handleUpload}
                                             variant="outlined"
                                             color="success"
-                                            sx={{ mt: 2  }}
+                                            sx={{ mt: 2 }}
                                             disabled={uploadLoading}
                                         >
                                             Send Files
                                         </Button>
                                         <Button
-                                            onClick={() => {setSelectedFiles([]);}}
+                                            onClick={() => { setSelectedFiles([]); }}
                                             variant="outlined"
                                             color="error"
                                             sx={{ mt: 2, color: "#f72a0f" }}
@@ -311,7 +360,8 @@ export default function RootLayout({children}) {
                                         <label htmlFor="file-input">
                                             <Button
                                                 component="span"
-                                                sx={{ mt: 2,   marginBottom:"20px" ,borderRadius:'100%',    boxShadow: "5px 5px 10px rgba(0, 0, 0, 0.2)" // Box shadow
+                                                sx={{
+                                                    mt: 2, marginBottom: "20px", borderRadius: '100%', boxShadow: "5px 5px 10px rgba(0, 0, 0, 0.2)" // Box shadow
 
                                                 }}
                                             >
@@ -330,10 +380,10 @@ export default function RootLayout({children}) {
                                                 />
                                             </Button>
                                         </label>
-                                        <Typography id="modal-description" sx={{ mb: 2, color:'#475467' }}>
+                                        <Typography id="modal-description" sx={{ mb: 2, color: '#475467' }}>
                                             <span className="text-[#00FFB6] font-extrabold ">Click to update</span>   or drag and drop
                                         </Typography>
-                                        <Typography id="modal-description" sx={{ mb: 2,color:'#475467' }}>
+                                        <Typography id="modal-description" sx={{ mb: 2, color: '#475467' }}>
                                             PDF (max 50 MG)
                                         </Typography>
                                         <input
@@ -344,7 +394,6 @@ export default function RootLayout({children}) {
                                             id="file-input"
                                             multiple // Allow multiple file selection
                                         />
-
                                         <Image
                                             src="/pdf.svg"
                                             alt="login image"
@@ -394,7 +443,7 @@ export default function RootLayout({children}) {
                             )}
                         </Box>
                     </Modal>
-                    <ToastContainer/>
+                    <ToastContainer />
                 </div>
             </div>
             <div className="main md:w-full md:w-[78%]" style={chatStyle}>
