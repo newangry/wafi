@@ -16,7 +16,7 @@ const Redirect = () => {
       const code = searchParams.get('code')
       const user_type = localStorage.getItem("user_type")
     if (code) {
-      const serverEndpoint = `https://wafi-backend.onrender.com/users/login/google?code=${code}&user_type=${user_type}`;
+      const serverEndpoint = `https://wafi-api.onrender.com/users/login/google?code=${code}&user_type=${user_type}`;
       axios
         .get(serverEndpoint)
         .then((response) => {

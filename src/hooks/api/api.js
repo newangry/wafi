@@ -5,7 +5,7 @@ import {useRouter} from "next/navigation";
 
 const axiosParams = {
     // baseURL: 'http://64.226.125.111:8000/'
-    baseURL: 'https://wafi-backend.onrender.com/'
+    baseURL: 'https://wafi-api.onrender.com/'
 }
 
 const axiosInstance = axios.create(axiosParams);    

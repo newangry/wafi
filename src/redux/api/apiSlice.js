@@ -4,7 +4,7 @@ import { setCredentials, logOut } from '../auth/authSlice'
 import {useRouter} from "next/navigation";
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: 'https://wafi-backend.onrender.com/',
+    baseUrl: 'https://wafi-api.onrender.com/',
     prepareHeaders: (headers, { getState }) => {
         const accessToken = getState().auth.access_token
         if (accessToken) {
