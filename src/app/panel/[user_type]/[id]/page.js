@@ -213,14 +213,14 @@ export default function Home({ params }) {
             })
             robotVoice.play();
         } else{
-                const res = await api.post(`chats/tts?text=${msg}`)
-                let audio = new Audio("data:audio/wav;base64," + res)
-                audio.play()
-                setIsPlay({
-                    index,
-                    play: true
-                })
-                setRobotVoice(audio)
+            const res = await api.post(`chats/tts?text=${msg}`)
+            let audio = new Audio("data:audio/wav;base64," + res)
+            audio.play()
+            setIsPlay({
+                index,
+                play: true
+            })
+            setRobotVoice(audio)
         }
             
         setVoiceLoading(false)

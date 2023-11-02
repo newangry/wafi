@@ -90,12 +90,12 @@ export default function RootLayout({ children }) {
             notify()
             handleClose();
             getChats()
-            router.push(`/panel/${user_type}/${params.id}`)
+            router.push(`/panel/${user_type}/${res.id}`)
         } catch (err) {
-            console.log(err)
-            toast.error("the connection has error !", {
-                position: toast.POSITION.TOP_CENTER
-            });
+            // toast.error("the connection has error !", {
+            //     position: toast.POSITION.TOP_CENTER
+            // });
+            
         } finally {
             setUploadLoading(false)
         }
