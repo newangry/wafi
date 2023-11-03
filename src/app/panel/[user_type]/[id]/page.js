@@ -89,7 +89,7 @@ export default function Home({ params }) {
     const getAnswer = async (_message) => {
         setAILoading(true)
         let updated_history = JSON.parse(JSON.stringify(addLoadingMassage(_message)))
-        const newMassage = massage
+        const newMassage = _message
         setMassage("")
 
         let formData = new FormData()
@@ -282,9 +282,8 @@ export default function Home({ params }) {
                                     alt="costumer" width={0}
                                     height={0}
                                     sizes="100vw"
-                                    
                                     style={{ width: '100%', height: 'auto', objectFit: "cover", marginTop:'20px' }} /> :
-                                EMOTHIONS.filter(item => item == emothion).length > 0 ?
+                                    EMOTHIONS.filter(item => item == emothion).length > 0 ?
                                     <Image src={`/Animations/${emothion}.svg`}
                                         alt="costumer" width={0}
                                         height={0}
