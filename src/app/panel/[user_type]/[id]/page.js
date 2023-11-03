@@ -7,13 +7,18 @@ import { useDispatch, useSelector } from 'react-redux'
 import { toggleMenu } from '../../../../redux/sidebar/sidebarSlice'
 import { AudioRecorder } from 'react-audio-voice-recorder';
 import { useEffect, useRef, useState } from "react";
-import { toast } from "react-toastify";
 import "../../../../style/spotLoading.css"
 import api, { axiosInstance } from "@/hooks/api/api";
 import Tooltip from '@mui/material/Tooltip';
 import "../../../../style/smallSpinner.css"
 import { EMOTHIONS, BACKEND_URL } from '@/utils/const';
-
+import Button from "@mui/material/Button";
+import Modal from "@mui/material/Modal";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import DoneAllIcon from '@mui/icons-material/DoneAll';
+import axios from "axios";
+import { ToastContainer, toast } from 'react-toastify';
 export default function Home({ params }) {
     const user_type = params.user_type;
     const router = useRouter()
@@ -30,11 +35,67 @@ export default function Home({ params }) {
     const [voiceLoading, setVoiceLoading] = useState(false)
     const [emothion, setEmothion] = useState('Talking')
     const [answer, setAnswer] = useState("");
-
+    const [open, setOpen] = useState(false);
+    const [selectedFiles, setSelectedFiles] = useState([]);
+    const [uploadLoading, setUploadLoading] = useState(false)
 
     useEffect(() => {
         scrollbars.current.scrollToBottom()
     }, [answer]);
+    const handleAddFile = (event) => {
+        const files = event.target.files;
+        const updatedSelectedFiles = [...selectedFiles];
+
+        for (let i = 0; i < files.length; i++) {
+            updatedSelectedFiles.push(files[i]);
+        }
+
+        setSelectedFiles(updatedSelectedFiles);
+    };
+    const handleOpen = () => {
+        setOpen(true);
+    };
+
+    const handleClose = () => {
+        setOpen(false);
+        setSelectedFiles([]);
+    };
+
+    const handleFileChange = (event) => {
+        const files = Array.from(event.target.files);
+        setSelectedFiles(files);
+    };
+
+    const handleFileDrop = (event) => {
+        event.preventDefault();
+        const files = Array.from(event.dataTransfer.files);
+        setSelectedFiles(files);
+    };
+
+    const handleDragOver = (event) => {
+        event.preventDefault();
+    };
+
+    const handleUpload = async () => {
+        setUploadLoading(true)
+        let formData = new FormData();
+        formData.append("file", selectedFiles[0]);
+        try {
+            const res = await api.postFile(`chats/create?title=${selectedFiles[0].name}&user_type=admin&chat_id=${params.id}`, formData)
+            toast.success("The file was sent successfully !", {
+                position: toast.POSITION.TOP_CENTER
+            });
+            handleClose();
+            // getChats()
+            // router.push(`/panel/${user_type}/${res.ID}`)
+        } catch (err) {
+            toast.error("the connection has error !", {
+                position: toast.POSITION.TOP_CENTER
+            });
+        } finally {
+            setUploadLoading(false)
+        }
+    };
     
     const getChats = async () => {
         try {
@@ -182,7 +243,7 @@ export default function Home({ params }) {
         let chat = {
             Human: {
                 date: date,
-                message: <div className="mb-10"><span className="loader"></span></div>
+                message: <div className="mb-10 ml-10"><span className="loader"></span></div>
             },
             AI: {
                 date: date,
@@ -466,7 +527,12 @@ export default function Home({ params }) {
                             audioBitsPerSecond: 128000,
                         }} />
                     <button>
-                        <AiOutlinePaperClip className="text-[#C9C9C9] text-[1.6rem]" />
+                        {
+                            user_type == "admin"?
+                            <AiOutlinePaperClip className="text-[#C9C9C9] text-[1.6rem]" 
+                                onClick={() => {setOpen(true)}}
+                            />:<></>
+                        }
                     </button>
                     <button disabled={massage === "" || AILoading} onClick={handleSendMassage}
                         className="disabled:bg-[#EAFFF6] hover:bg-[#EAFFF6] bg-mainGreen px-3 py-3 rounded-[0.5rem] border border-solid border-2 border-[#ECEEF5]">
@@ -479,6 +545,172 @@ export default function Home({ params }) {
                     </button>
                 </div>
             </div>
+            <div>
+                    <Modal
+                        open={open}
+                        onClose={handleClose}
+                        aria-labelledby="modal-title"
+                        aria-describedby="modal-description">
+                        <Box
+                            sx={{
+                                position: "absolute",
+                                top: "50%",
+                                left: "50%",
+                                transform: "translate(-50%, -50%)",
+                                width: '70%',
+                                height: '65vh',
+                                maxHeight: "100vh",
+                                bgcolor: "#fcfcfa",
+                                boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.5)",
+                                p: 4,
+                                textAlign: "center",
+                            }}>
+                            {selectedFiles.length > 0 ? (
+                                <div className="bg-[#f7f6f2] border-2 border-[#00FFB6] w-full h-full flex flex-col justify-center mx-auto rounded-3xl">
+                                    <Typography id="modal-description" sx={{ mb: 2 }}>
+                                        Selected Files:
+                                    </Typography>
+                                    <ul>
+                                        {selectedFiles.map((file, index) => (
+                                            <li className="text-[#4a4646]" key={index}>
+                                                <DoneAllIcon /> {file.name}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    {uploadLoading && <div className="flex justify-center z-10">
+                                        <span className="loader"></span>
+                                    </div>}
+                                    <div className="gap-3 mt-5 mb-5">
+                                        <Button
+                                            onClick={handleUpload}
+                                            variant="outlined"
+                                            color="success"
+                                            sx={{ mt: 2 }}
+                                            disabled={uploadLoading}
+                                        >
+                                            Send Files
+                                        </Button>
+                                        <Button
+                                            onClick={() => { setSelectedFiles([]); }}
+                                            variant="outlined"
+                                            color="error"
+                                            sx={{ mt: 2, color: "#f72a0f" }}
+                                            disabled={uploadLoading}
+                                        >
+                                            Clear Files
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex justify-center">
+                                    <div
+                                        onDrop={handleFileDrop}
+                                        onDragOver={handleDragOver}
+                                        className=" rounded-md p-5 cursor-pointer mb-5 w-[90%] h-full flex flex-col justify-center mx-auto md:mx-0  bg-[#f7f6f2] relative border-2 border-[#00FFB6] mt-10"
+                                        style={{
+                                            height: "45vh",
+                                        }}>
+                                        <Image
+                                            src="/csv.svg"
+                                            alt="login image"
+                                            width={0}
+                                            height={0}
+                                            sizes="100vw"
+                                            style={{
+                                                width: "20%",
+                                                height: "auto",
+                                                position: "absolute",
+                                                top: "50px",
+                                                left: "-10%",
+                                            }}
+                                        />
+                                        <label htmlFor="file-input">
+                                            <Button
+                                                component="span"
+                                                sx={{
+                                                    mt: 2, marginBottom: "20px", borderRadius: '100%', boxShadow: "5px 5px 10px rgba(0, 0, 0, 0.2)" // Box shadow
+                                                }}
+                                            >
+                                                <Image
+                                                    src="/upload.svg"
+                                                    alt="login image"
+                                                    variant="contained"
+                                                    width={0}
+                                                    height={0}
+                                                    sizes="100vw"
+                                                    style={{
+                                                        width: "40px",
+                                                        height: "auto",
+                                                        marginRight: "2px",
+                                                    }}
+                                                />
+                                            </Button>
+                                        </label>
+                                        <Typography id="modal-description" sx={{ mb: 2, color: '#475467' }}>
+                                            <span className="text-[#00FFB6] font-extrabold ">Click to update</span>   or drag and drop
+                                        </Typography>
+                                        <Typography id="modal-description" sx={{ mb: 2, color: '#475467' }}>
+                                            PDF, DOC(DOCX), TXT (max 50 MG)
+                                        </Typography>
+                                        <input
+                                            type="file"
+                                            accept=".pdf, .doc, .docx, .txt"
+                                            onChange={handleFileChange}
+                                            style={{ display: "none" }}
+                                            id="file-input"
+                                            multiple // Allow multiple file selection
+                                        />
+                                        <Image
+                                            src="/pdf.svg"
+                                            alt="login image"
+                                            width={0}
+                                            height={0}
+                                            sizes="100vw"
+                                            style={{
+                                                width: "20%",
+                                                height: "auto",
+                                                position: "absolute",
+                                                top: "180px",
+                                                right: "-10%",
+                                            }}
+                                        />
+                                        <Image
+                                            src="/dock.svg"
+                                            alt="login image"
+                                            width={0}
+                                            height={0}
+                                            sizes="100vw"
+                                            style={{
+                                                width: "20%",
+                                                height: "auto",
+                                                position: "absolute",
+                                                top: "200px",
+                                                right: "90%",
+                                            }}
+                                        />
+                                        <Image
+                                            src="/File.svg"
+                                            alt="login image"
+                                            variant="contained"
+                                            width={0}
+                                            height={0}
+                                            sizes="100vw"
+                                            style={{
+                                                width: "8vw",
+                                                height: "auto",
+                                                // marginLeft: "200px",
+                                                position: "absolute",
+                                                top: "200px",
+                                                right: "4%",
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </Box>
+                    </Modal>
+                    <ToastContainer />
+                </div>
         </div>
     )
 }
