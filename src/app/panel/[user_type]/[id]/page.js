@@ -282,7 +282,8 @@ export default function Home({ params }) {
                                     alt="costumer" width={0}
                                     height={0}
                                     sizes="100vw"
-                                    style={{ width: '100%', height: 'auto', objectFit: "cover" }} /> :
+                                    
+                                    style={{ width: '100%', height: 'auto', objectFit: "cover", marginTop:'20px' }} /> :
                                 EMOTHIONS.filter(item => item == emothion).length > 0 ?
                                     <Image src={`/Animations/${emothion}.svg`}
                                         alt="costumer" width={0}

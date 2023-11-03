@@ -36,9 +36,7 @@ export default function RootLayout({ children }) {
             toast.success("The new playground was created !", {
                 position: toast.POSITION.TOP_CENTER
             });
-            
         }
-        
     }
 
     const getChats = async () => {
