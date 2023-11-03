@@ -343,7 +343,7 @@ export default function Home({ params }) {
                                                 </p>
                                                 <div className="mt-4 flex justify-end">
                                                     {
-                                                        voiceLoading ? (
+                                                        voiceLoading || AILoading? (
                                                             <span className="loaderSmall"></span>
                                                         ) : isPlay.index == index?
                                                              !isPlay.play? (
