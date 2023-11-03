@@ -16,3 +16,4 @@ export const EMOTHIONS = [
     "Wink"
 ]
 export const BACKEND_URL = "https://wafi-api.onrender.com";
+export const FRONTEND_URL = "https://wafi-six.vercel.app";
