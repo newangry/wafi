@@ -188,6 +188,19 @@ export default function RootLayout({ children }) {
         }
     }
 
+    const getImage = (title) => {
+        const splited = title.split(".")
+        const extension = splited[splited.length-1].toUpperCase()
+        if(extension == "PDF") {
+            return "/pdf.png";
+        } else if(extension == "DOC" || extension == "DOCX") {
+            return "/word.png"
+        } else {
+            return "/text.png"
+        }
+        
+    }
+
     return (
         <div className="md:flex">
             <div className="overflow-hidden h-screen w-full md:w-[32%] p-5 pb-20  border border-solid border-1 border-neutral-300" style={menuStyle}>
@@ -219,7 +232,7 @@ export default function RootLayout({ children }) {
                                                         <div className="flex justify-between">
                                                             <div className="w-[20%] flex justify-center items-start">
                                                                 <div className="w-[70%]">
-                                                                    <Image src="/pdf.png" alt="costumer" width={0}
+                                                                    <Image src={getImage(chat.Title)} alt="costumer" width={0}
                                                                         height={0}
                                                                         sizes="100vw"
                                                                         style={{ width: '100%', height: 'auto' }} />
@@ -385,7 +398,7 @@ export default function RootLayout({ children }) {
                                             <span className="text-[#00FFB6] font-extrabold ">Click to update</span>   or drag and drop
                                         </Typography>
                                         <Typography id="modal-description" sx={{ mb: 2, color: '#475467' }}>
-                                            PDF (max 50 MG)
+                                            PDF, DOC(DOCX), TXT (max 50 MG)
                                         </Typography>
                                         <input
                                             type="file"
