@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { useDispatch } from 'react-redux'
 import { setCredentials } from '../../redux/auth/authSlice'
+import { BACKEND_URL } from "@/utils/const";
 
 const Redirect = () => {
     const dispatch = useDispatch()
@@ -16,7 +17,7 @@ const Redirect = () => {
       const code = searchParams.get('code')
       const user_type = localStorage.getItem("user_type")
     if (code) {
-      const serverEndpoint = `https://wafi-api.onrender.com/users/login/google?code=${code}&user_type=${user_type}`;
+      const serverEndpoint = `${BACKEND_URL}/users/login/google?code=${code}&user_type=${user_type}`;
       axios
         .get(serverEndpoint)
         .then((response) => {

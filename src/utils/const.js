@@ -15,3 +15,4 @@ export const EMOTHIONS = [
     "Tongue",
     "Wink"
 ]
+export const BACKEND_URL = "https://wafi-api.onrender.com";

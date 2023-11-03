@@ -2,13 +2,14 @@
 import axios from "axios";
 import { toast } from 'react-toastify';
 import {useRouter} from "next/navigation";
+import { BACKEND_URL } from "@/utils/const";
 
 const axiosParams = {
     // baseURL: 'http://64.226.125.111:8000/'
-    baseURL: 'https://wafi-api.onrender.com/'
+    baseURL: `${BACKEND_URL}/`
 }
 
-const axiosInstance = axios.create(axiosParams);    
+export const axiosInstance = axios.create(axiosParams);    
 let user_type = localStorage.getItem("user_type")
 if(user_type == undefined || user_type == "user"){
     user_type = "user"

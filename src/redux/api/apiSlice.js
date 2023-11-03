@@ -2,9 +2,10 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { setCredentials, logOut } from '../auth/authSlice'
 import {useRouter} from "next/navigation";
+import { BACKEND_URL } from '@/utils/const';
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: 'https://wafi-api.onrender.com/',
+    baseUrl: `${BACKEND_URL}/`,
     prepareHeaders: (headers, { getState }) => {
         const accessToken = getState().auth.access_token
         if (accessToken) {

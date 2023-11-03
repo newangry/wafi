@@ -84,7 +84,7 @@ export default function RootLayout({ children }) {
     const handleUpload = async () => {
         setUploadLoading(true)
         let formData = new FormData();
-        formData.append("pdf", selectedFiles[0]);
+        formData.append("file", selectedFiles[0]);
         try {
             const res = await api.postFile(`chats/create?title=${selectedFiles[0].name}&user_type=${user_type}`, formData)
             notify()
@@ -389,7 +389,7 @@ export default function RootLayout({ children }) {
                                         </Typography>
                                         <input
                                             type="file"
-                                            accept=".jpg, .jpeg, .png, .pdf"
+                                            accept=".pdf, .doc, .docx, .txt"
                                             onChange={handleFileChange}
                                             style={{ display: "none" }}
                                             id="file-input"
