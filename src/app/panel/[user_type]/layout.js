@@ -90,7 +90,7 @@ export default function RootLayout({ children }) {
             notify()
             handleClose();
             getChats()
-            router.push(`/panel/${user_type}/${res.id}`)
+            router.push(`/panel/${user_type}/${res.ID}`)
         } catch (err) {
             toast.error("the connection has error !", {
                 position: toast.POSITION.TOP_CENTER
