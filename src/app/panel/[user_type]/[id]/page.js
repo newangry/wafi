@@ -89,7 +89,7 @@ export default function Home({ params }) {
             // getChats()
             // router.push(`/panel/${user_type}/${res.ID}`)
         } catch (err) {
-            toast.error("the connection has error !", {
+            toast.error("Timeout issue. Try again.", {
                 position: toast.POSITION.TOP_CENTER
             });
         } finally {
