@@ -34,9 +34,8 @@ export default function Home({ params }) {
 
     useEffect(() => {
         scrollbars.current.scrollToBottom()
-    }, [chatHistory]);
-
-
+    }, [answer]);
+    
     const getChats = async () => {
         try {
             const res = await api.get(`chats/read/${params.id}`)
@@ -73,9 +72,10 @@ export default function Home({ params }) {
             },
             AI: {
                 date: date,
-                message: <div className="mb-10 ml-[20PX]"><span className="loader"></span></div>
+                message: <div className="mb-10 "><span className="loader"></span></div>
             },
         }
+        
         updateChatHistory.push(chat)
         setChatHistory(updateChatHistory)
 
@@ -235,7 +235,6 @@ export default function Home({ params }) {
             let audio = new Audio("data:audio/wav;base64," + res.speech)
             setEmothion(res.emotion);
             saveHistory(massage, msg, res.emotion)
-
             audio.play()
             setIsPlay({
                 index,
@@ -369,7 +368,11 @@ export default function Home({ params }) {
                                                 <p className="text-[0.8rem]">
                                                     {
                                                         index == chatHistory.length-1?
-                                                        answer:
+                                                            AILoading?
+                                                                answer == ""?
+                                                                    <div className="mb-10 ml-5"><span className="loader"></span></div>:
+                                                                    answer:
+                                                            massage.AI.message:
                                                         massage.AI.message
                                                     }
                                                 </p>
