@@ -29,6 +29,7 @@ export default function Home({ params }) {
     const [isPlay, setIsPlay] = useState({ index: -1, play: false })
     const [voiceLoading, setVoiceLoading] = useState(false)
     const [emothion, setEmothion] = useState('Talking')
+    const [answer, setAnswer] = useState("");
 
 
     useEffect(() => {
@@ -40,16 +41,12 @@ export default function Home({ params }) {
         try {
             const res = await api.get(`chats/read/${params.id}`)
             setChat(res)
-            
+
             if (res.chat_history !== null) {
                 setChatHistory(res?.chat_history)
                 const chat_history = res.chat_history;
                 if (chat_history.length > 0) {
-                    // const _emothion = chat_history[chat_history.length - 1].AI.emotion
-                    // handlePlayVoice(chat_history[chat_history.length - 1].AI.message, chat_history.length - 1)
-                    // if (EMOTHIONS.filter((item) => item == _emothion).length > 0) {
-                    //     setEmothion(_emothion)
-                    // }
+
                 } else if (chat_history == 1) {
                     router.push(`/panel/${user_type}/${res.ID}`)
                 }
@@ -76,11 +73,12 @@ export default function Home({ params }) {
             },
             AI: {
                 date: date,
-                message: <div className="mb-10"><span className="loader"></span></div>
+                message: <div className="mb-10 ml-[20PX]"><span className="loader"></span></div>
             },
         }
         updateChatHistory.push(chat)
         setChatHistory(updateChatHistory)
+
         return updateChatHistory;
     }
 
@@ -88,43 +86,53 @@ export default function Home({ params }) {
         getAnswer(massage)
     }
 
-    const getAnswer = async(_message) => {
+    const getAnswer = async (_message) => {
         setAILoading(true)
-        let updated_history = addLoadingMassage(_message)
+        let updated_history = JSON.parse(JSON.stringify(addLoadingMassage(_message)))
         const newMassage = massage
         setMassage("")
 
         let formData = new FormData()
         formData.append("audio", "")
+        setAnswer("");
+        try {
+            const response = await fetch(`${BACKEND_URL}/chats/new_message?chat_id=${params.id}&input_type=text&output_type=text&new_message=${newMassage}&user_type=${user_type}`,
+                {
+                    method: 'post',
+                    headers: {
+                        'Authorization': `Bearer ${window.sessionStorage.getItem("access_token")}`,
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    body: formData
+                });
+            const decoder = new TextDecoder();
+            const reader = response.body.getReader();
+            // Read the response stream as chunks and append them to the chat log
+            let txt = "";
+            let length = "";
 
-        const response = await fetch(`${BACKEND_URL}/chats/new_message?chat_id=${params.id}&input_type=text&output_type=text&new_message=${newMassage}&user_type=${user_type}`,
-            {
-                method: 'post',
-                headers: {
-                    'Authorization': `Bearer ${window.sessionStorage.getItem("access_token")}`,
-                    'Content-Type': 'multipart/form-data'
-                },
-                body: formData
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                txt = txt + decoder.decode(value);
+                console.log(txt)
+                updated_history[updated_history.length - 1].AI.message = txt;
+                length = updated_history.length;
+                setAnswer(txt)
+                setChatHistory(updated_history);
+            }
+
+            setAILoading(false)
+            handlePlayVoice(txt, length - 1)
+        } catch (e) {
+            toast.error("The server error", {
+                position: toast.POSITION.TOP_CENTER
             });
-        const decoder = new TextDecoder();
-        const reader = response.body.getReader();
-        // Read the response stream as chunks and append them to the chat log
-        let txt = "";
-        let length = "";
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            txt = txt + decoder.decode(value); 
-            updated_history[updated_history.length - 1].AI.message = txt;          
-            length = updated_history.length;
-            setChatHistory(updated_history);
+            setAILoading(false)
         }
 
-        setAILoading(false)
-        handlePlayVoice(txt, length - 1)
     }
-    
+
     const handleSendMassageByVoice = async (mag) => {
         getAnswer(mag)
     }
@@ -213,21 +221,21 @@ export default function Home({ params }) {
     const handleUpdate = () => {
         scrollbars.current.scrollToBottom()
     }
-    
+
     const handlePlayVoice = async (msg, index) => {
         setVoiceLoading(true)
-        if(index == isPlay.index){
+        if (index == isPlay.index) {
             setIsPlay({
                 index,
                 play: true
             })
             robotVoice.play();
-        } else{
+        } else {
             const res = await api.post(`chats/tts?text=${msg}`)
             let audio = new Audio("data:audio/wav;base64," + res.speech)
             setEmothion(res.emotion);
             saveHistory(massage, msg, res.emotion)
-            
+
             audio.play()
             setIsPlay({
                 index,
@@ -235,14 +243,14 @@ export default function Home({ params }) {
             })
             setRobotVoice(audio)
         }
-            
+
         setVoiceLoading(false)
     }
 
-    const saveHistory = async(message, ai, emotion) => {
+    const saveHistory = async (message, ai, emotion) => {
         const res = await api.post(`chats/save_history?ai=${ai}&message=${message}&emotion=${emotion}&chat_id=${params.id}`)
     }
-    
+
     useEffect(() => {
         if (robotVoice) {
             robotVoice.addEventListener('ended', function () {
@@ -254,7 +262,7 @@ export default function Home({ params }) {
             });
         }
     }, [robotVoice])
-    
+
     const handlePauseVoice = (index) => {
         robotVoice.pause();
         setIsPlay({
@@ -276,17 +284,17 @@ export default function Home({ params }) {
                                     height={0}
                                     sizes="100vw"
                                     style={{ width: '100%', height: 'auto', objectFit: "cover" }} /> :
-                                EMOTHIONS.filter(item => item == emothion).length > 0?
-                                <Image src={`/Animations/${emothion}.svg`}
-                                    alt="costumer" width={0}
-                                    height={0}
-                                    sizes="100vw"
-                                    style={{ width: '100%', height: 'auto', objectFit: "cover" }} />:
-                                <Image src={`/Animations/Talking.svg`}
-                                    alt="costumer" width={0}
-                                    height={0}
-                                    sizes="100vw"
-                                    style={{ width: '100%', height: 'auto', objectFit: "cover" }} />
+                                EMOTHIONS.filter(item => item == emothion).length > 0 ?
+                                    <Image src={`/Animations/${emothion}.svg`}
+                                        alt="costumer" width={0}
+                                        height={0}
+                                        sizes="100vw"
+                                        style={{ width: '100%', height: 'auto', objectFit: "cover" }} /> :
+                                    <Image src={`/Animations/Talking.svg`}
+                                        alt="costumer" width={0}
+                                        height={0}
+                                        sizes="100vw"
+                                        style={{ width: '100%', height: 'auto', objectFit: "cover" }} />
                         }
 
                     </div>
@@ -359,15 +367,55 @@ export default function Home({ params }) {
                                             <div
                                                 className="flex flex-col justify-center font-medium text-textGray bg-[#F3F4F9]  rounded-xl rounded-ss-none p-3">
                                                 <p className="text-[0.8rem]">
-                                                    {massage?.AI?.message}
+                                                    {
+                                                        index == chatHistory.length-1?
+                                                        answer:
+                                                        massage.AI.message
+                                                    }
                                                 </p>
                                                 <div className="mt-4 flex justify-end">
                                                     {
-                                                        AILoading?<></>:
-                                                        voiceLoading? (
-                                                            <span className="loaderSmall" style={{marginLeft: '20px'}}></span>
-                                                        ) : isPlay.index == index ?
-                                                            !isPlay.play ? (
+                                                        AILoading ? <></> :
+                                                            voiceLoading ? (
+                                                                <div className="loaderSmall" style={{ paddingLeft: '20px' }}></div>
+                                                            ) : isPlay.index == index ?
+                                                                !isPlay.play ? (
+                                                                    <Tooltip title="play the voice" arrow>
+                                                                        <button onClick={() => {
+                                                                            handlePlayVoice(massage?.AI?.message, index)
+                                                                        }}>
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="23"
+                                                                                height="23" fill="currentColor"
+                                                                                className="bi bi-play-circle"
+                                                                                viewBox="0 0 16 16">
+                                                                                <path
+                                                                                    d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                                                                <path
+                                                                                    d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </Tooltip>
+                                                                ) :
+                                                                    <Tooltip title="pause the voice" arrow>
+                                                                        <button onClick={() => {
+                                                                            handlePauseVoice(index)
+                                                                        }}>
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="23"
+                                                                                height="23" viewBox="0 0 256 256">
+                                                                                <rect width="256" height="256" fill="none" />
+                                                                                <circle cx="128" cy="128" r="96" fill="none"
+                                                                                    stroke="#000" stroke-linecap="round"
+                                                                                    stroke-linejoin="round" stroke-width="12" />
+                                                                                <line x1="104" y1="96" x2="104" y2="160" fill="none"
+                                                                                    stroke="#000" stroke-linecap="round"
+                                                                                    stroke-linejoin="round" stroke-width="12" />
+                                                                                <line x1="152" y1="96" x2="152" y2="160" fill="none"
+                                                                                    stroke="#000" stroke-linecap="round"
+                                                                                    stroke-linejoin="round" stroke-width="12" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </Tooltip>
+                                                                :
                                                                 <Tooltip title="play the voice" arrow>
                                                                     <button onClick={() => {
                                                                         handlePlayVoice(massage?.AI?.message, index)
@@ -383,42 +431,6 @@ export default function Home({ params }) {
                                                                         </svg>
                                                                     </button>
                                                                 </Tooltip>
-                                                            ) :
-                                                                <Tooltip title="pause the voice" arrow>
-                                                                    <button onClick={() => {
-                                                                        handlePauseVoice(index)
-                                                                    }}>
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="23"
-                                                                            height="23" viewBox="0 0 256 256">
-                                                                            <rect width="256" height="256" fill="none" />
-                                                                            <circle cx="128" cy="128" r="96" fill="none"
-                                                                                stroke="#000" stroke-linecap="round"
-                                                                                stroke-linejoin="round" stroke-width="12" />
-                                                                            <line x1="104" y1="96" x2="104" y2="160" fill="none"
-                                                                                stroke="#000" stroke-linecap="round"
-                                                                                stroke-linejoin="round" stroke-width="12" />
-                                                                            <line x1="152" y1="96" x2="152" y2="160" fill="none"
-                                                                                stroke="#000" stroke-linecap="round"
-                                                                                stroke-linejoin="round" stroke-width="12" />
-                                                                        </svg>
-                                                                    </button>
-                                                                </Tooltip>
-                                                            :
-                                                            <Tooltip title="play the voice" arrow>
-                                                                <button onClick={() => {
-                                                                    handlePlayVoice(massage?.AI?.message, index)
-                                                                }}>
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="23"
-                                                                        height="23" fill="currentColor"
-                                                                        className="bi bi-play-circle"
-                                                                        viewBox="0 0 16 16">
-                                                                        <path
-                                                                            d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
-                                                                        <path
-                                                                            d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z" />
-                                                                    </svg>
-                                                                </button>
-                                                            </Tooltip>
                                                     }
                                                 </div>
                                             </div>
