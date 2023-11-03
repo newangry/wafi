@@ -27,9 +27,18 @@ export default function RootLayout({ children }) {
     const [chats, setChats] = useState([])
     const [uploadLoading, setUploadLoading] = useState(false)
     const notify = () => {
-        toast.success("The file was sent successfully !", {
-            position: toast.POSITION.TOP_CENTER
-        });
+        if(user_type == "admin") {
+            toast.success("The file was sent successfully !", {
+                position: toast.POSITION.TOP_CENTER
+            });
+            
+        } else {
+            toast.success("The new playground was created !", {
+                position: toast.POSITION.TOP_CENTER
+            });
+            
+        }
+        
     }
 
     const getChats = async () => {
@@ -198,7 +207,6 @@ export default function RootLayout({ children }) {
         } else {
             return "/text.png"
         }
-        
     }
 
     return (
