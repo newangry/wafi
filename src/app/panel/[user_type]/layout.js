@@ -16,14 +16,12 @@ import api from "@/hooks/api/api";
 export default function RootLayout({ children }) {
     const router = useRouter()
 
-    const user_type = children.props.segmentPath[3][1];
-
-
+    const user_type = children.props.segmentPath[3][1]; 
     const [chats, setChats] = useState([])
 
     const getChats = async () => {
         try {
-            const res = await api.get(`chats?user_type=user`)
+            const res = await api.get(`chats?user_type=user&chat_id=-1`)
             setChats(res)
         } catch (err) {
             toast.error("the connection has error !", {
@@ -136,7 +134,7 @@ export default function RootLayout({ children }) {
             return "/text.png"
         }
     }
-   
+
     return (
         <div className="md:flex">
             <div className="overflow-hidden h-screen w-full md:w-[32%] p-5 pb-20  border border-solid border-1 border-neutral-300" style={menuStyle}>
@@ -147,7 +145,6 @@ export default function RootLayout({ children }) {
                     </button>
                 </div>
                 {
-
                     <Scrollbars autoHide
                         className="scroll-bar"
                         autoHideTimeout={500}

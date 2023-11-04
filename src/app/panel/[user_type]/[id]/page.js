@@ -19,6 +19,7 @@ import Typography from "@mui/material/Typography";
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import axios from "axios";
 import { ToastContainer, toast } from 'react-toastify';
+import Link from 'next/link';
 export default function Home({ params }) {
     const user_type = params.user_type;
     const router = useRouter()
@@ -38,6 +39,7 @@ export default function Home({ params }) {
     const [open, setOpen] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [uploadLoading, setUploadLoading] = useState(false)
+    const [files, setFiles] = useState([])
 
     useEffect(() => {
         scrollbars.current.scrollToBottom()
@@ -86,8 +88,7 @@ export default function Home({ params }) {
                 position: toast.POSITION.TOP_CENTER
             });
             handleClose();
-            // getChats()
-            // router.push(`/panel/${user_type}/${res.ID}`)
+            getFiles()
         } catch (err) {
             toast.error("Timeout issue. Try again.", {
                 position: toast.POSITION.TOP_CENTER
@@ -96,7 +97,7 @@ export default function Home({ params }) {
             setUploadLoading(false)
         }
     };
-    
+
     const getChats = async () => {
         try {
             const res = await api.get(`chats/read/${params.id}`)
@@ -120,6 +121,7 @@ export default function Home({ params }) {
 
     useEffect(() => {
         setRobotVoice(new Audio())
+        getFiles()
         getChats()
     }, [])
 
@@ -136,7 +138,7 @@ export default function Home({ params }) {
                 message: <div className="mb-10 "><span className="loader"></span></div>
             },
         }
-        
+
         updateChatHistory.push(chat)
         setChatHistory(updateChatHistory)
 
@@ -145,6 +147,17 @@ export default function Home({ params }) {
 
     const handleSendMassage = async () => {
         getAnswer(massage)
+    }
+    const getImage = (title) => {
+        const splited = title.split(".")
+        const extension = splited[splited.length - 1].toUpperCase()
+        if (extension == "PDF") {
+            return "/pdf.png";
+        } else if (extension == "DOC" || extension == "DOCX") {
+            return "/word.png"
+        } else {
+            return "/text.png"
+        }
     }
 
     const getAnswer = async (_message) => {
@@ -331,119 +344,166 @@ export default function Home({ params }) {
         })
     }
 
+    const getFiles = async () => {
+        try {
+            const res = await api.get(`chats?user_type=admin&chat_id=${params.id}`)
+            setFiles(res)
+        } catch (err) {
+            toast.error("The server error!", {
+                position: toast.POSITION.TOP_CENTER
+            });
+        }
+    }
     return (
-        <div className="h-screen w-full flex flex-col justify-between">
-            <header
-                className="px-5 md:px-10">
-                <div className="flex justify-center">
-                    <div className="w-[17%] rounded-[0.5rem]">
-                        {
-                            !isPlay.play ?
-                                <Image src={`/robothead.svg`}
-                                    alt="costumer" width={0}
-                                    height={0}
-                                    sizes="100vw"
-                                    style={{ width: '100%', height: 'auto', objectFit: "cover", marginTop:'20px' }} /> :
+        <div className='flex lg:flex-row'>
+            <div className={`h-screen ${user_type == 'admin'?'w-[79%]':'w-full'} flex flex-col justify-between`}>
+                <header
+                    className="px-5 md:px-10">
+                    <div className="flex justify-center">
+                        <div className="w-[17%] rounded-[0.5rem]">
+                            {
+                                !isPlay.play ?
+                                    <Image src={`/robothead.svg`}
+                                        alt="costumer" width={0}
+                                        height={0}
+                                        sizes="100vw"
+                                        style={{ width: '100%', height: 'auto', objectFit: "cover", marginTop: '20px' }} /> :
                                     EMOTHIONS.filter(item => item == emothion).length > 0 ?
-                                    <Image src={`/Animations/${emothion}.svg`}
-                                        alt="costumer" width={0}
-                                        height={0}
-                                        sizes="100vw"
-                                        style={{ width: '100%', height: 'auto', objectFit: "cover" }} /> :
-                                    <Image src={`/Animations/Talking.svg`}
-                                        alt="costumer" width={0}
-                                        height={0}
-                                        sizes="100vw"
-                                        style={{ width: '100%', height: 'auto', objectFit: "cover" }} />
-                        }
+                                        <Image src={`/Animations/${emothion}.svg`}
+                                            alt="costumer" width={0}
+                                            height={0}
+                                            sizes="100vw"
+                                            style={{ width: '100%', height: 'auto', objectFit: "cover" }} /> :
+                                        <Image src={`/Animations/Talking.svg`}
+                                            alt="costumer" width={0}
+                                            height={0}
+                                            sizes="100vw"
+                                            style={{ width: '100%', height: 'auto', objectFit: "cover" }} />
+                            }
 
+                        </div>
                     </div>
-                </div>
-            </header>
-            <Scrollbars autoHide
-                ref={scrollbars}
-                className="scroll-bar pb-10"
-                autoHideTimeout={500}
-                autoHideDuration={200}
-                renderView={renderView}
-                renderThumbHorizontal={renderThumbHorizontal}
-                renderThumbVertical={renderThumbVertical}
-                renderTrackVertical={renderTrackVertical}>
-                {
-                    chatHistory?.map((massage, index) => (
-                        <div>
-                            <div className="flex justify-end">
-                                <div className="flex flex-row-reverse mx-8 my-5 w-[80%] md:w-[50%]">
-                                    <div className="mx-2">
-                                        <div className="w-[2rem] rounded-[0.5rem]">
-                                            <Image src="/img.png" alt="costumer" width={0}
-                                                height={0}
-                                                sizes="100vw"
-                                                style={{ width: '100%', height: 'auto', objectFit: "cover" }} />
-
-                                        </div>
-
-                                    </div>
-                                    <div>
-                                        <div className="flex flex-row-reverse items-center">
-                                            <h2 className="font-bold text-[0.9rem] text-textGray">
-                                                Me
-                                            </h2>
-                                            <span className="mx-2 text-[#8083A3] text-[0.7rem]">
-                                                {massage.Human.date?.substring(11, 16)}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2">
-                                            <p className="font-medium text-textGray  bg-mainGreen rounded-xl rounded-se-none p-3 bg-[] text-[0.8rem]">
-                                                {massage?.Human?.message}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex ">
-                                <div className="flex mx-8 my-5 w-[80%] md:w-[50%]">
-                                    <div className="mx-2">
-                                        <div
-                                            className="hover:bg-[#EAFFF6] bg-mainGreen px-1 py-[0.3rem] rounded-[0.5rem] border border-solid border-2 border-[#ECEEF5]">
-                                            <div className="w-6">
-                                                <Image src="/smallHead.svg" alt="costumer" width={0}
+                </header>
+                <Scrollbars autoHide
+                    ref={scrollbars}
+                    className="scroll-bar pb-10"
+                    autoHideTimeout={500}
+                    autoHideDuration={200}
+                    renderView={renderView}
+                    renderThumbHorizontal={renderThumbHorizontal}
+                    renderThumbVertical={renderThumbVertical}
+                    renderTrackVertical={renderTrackVertical}>
+                    {
+                        chatHistory?.map((massage, index) => (
+                            <div>
+                                <div className="flex justify-end">
+                                    <div className="flex flex-row-reverse mx-8 my-5 w-[80%] md:w-[50%]">
+                                        <div className="mx-2">
+                                            <div className="w-[2rem] rounded-[0.5rem]">
+                                                <Image src="/img.png" alt="costumer" width={0}
                                                     height={0}
                                                     sizes="100vw"
-                                                    style={{ width: '100%', height: 'auto' }} />
+                                                    style={{ width: '100%', height: 'auto', objectFit: "cover" }} />
+
+                                            </div>
+
+                                        </div>
+                                        <div>
+                                            <div className="flex flex-row-reverse items-center">
+                                                <h2 className="font-bold text-[0.9rem] text-textGray">
+                                                    Me
+                                                </h2>
+                                                <span className="mx-2 text-[#8083A3] text-[0.7rem]">
+                                                    {massage.Human.date?.substring(11, 16)}
+                                                </span>
+                                            </div>
+                                            <div className="mt-2">
+                                                <p className="font-medium text-textGray  bg-mainGreen rounded-xl rounded-se-none p-3 bg-[] text-[0.8rem]">
+                                                    {massage?.Human?.message}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <div className="flex  items-center">
-                                            <h2 className="font-bold text-[0.9rem] text-textGray">
-                                                WAFI
-                                            </h2>
-                                            <span className="mx-2 text-[#8083A3] text-[0.7rem]">
-                                                {massage.AI.date?.substring(11, 16)}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2">
+                                </div>
+                                <div className="flex ">
+                                    <div className="flex mx-8 my-5 w-[80%] md:w-[50%]">
+                                        <div className="mx-2">
                                             <div
-                                                className="flex flex-col justify-center font-medium text-textGray bg-[#F3F4F9]  rounded-xl rounded-ss-none p-3">
-                                                <p className="text-[0.8rem]">
-                                                    {
-                                                        index == chatHistory.length-1?
-                                                            AILoading?
-                                                                answer == ""?
-                                                                    <div className="mb-10 ml-5"><span className="loader"></span></div>:
-                                                                    answer:
-                                                            massage.AI.message:
-                                                        massage.AI.message
-                                                    }
-                                                </p>
-                                                <div className="mt-4 flex justify-end">
-                                                    {
-                                                        AILoading ? <></> :
-                                                            voiceLoading ? (
-                                                                <div className="loaderSmall" style={{ paddingLeft: '20px' }}></div>
-                                                            ) : isPlay.index == index ?
-                                                                !isPlay.play ? (
+                                                className="hover:bg-[#EAFFF6] bg-mainGreen px-1 py-[0.3rem] rounded-[0.5rem] border border-solid border-2 border-[#ECEEF5]">
+                                                <div className="w-6">
+                                                    <Image src="/smallHead.svg" alt="costumer" width={0}
+                                                        height={0}
+                                                        sizes="100vw"
+                                                        style={{ width: '100%', height: 'auto' }} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex  items-center">
+                                                <h2 className="font-bold text-[0.9rem] text-textGray">
+                                                    WAFI
+                                                </h2>
+                                                <span className="mx-2 text-[#8083A3] text-[0.7rem]">
+                                                    {massage.AI.date?.substring(11, 16)}
+                                                </span>
+                                            </div>
+                                            <div className="mt-2">
+                                                <div
+                                                    className="flex flex-col justify-center font-medium text-textGray bg-[#F3F4F9]  rounded-xl rounded-ss-none p-3">
+                                                    <p className="text-[0.8rem]">
+                                                        {
+                                                            index == chatHistory.length - 1 ?
+                                                                AILoading ?
+                                                                    answer == "" ?
+                                                                        <div className="mb-10 ml-5"><span className="loader"></span></div> :
+                                                                        answer :
+                                                                    massage.AI.message :
+                                                                massage.AI.message
+                                                        }
+                                                    </p>
+                                                    <div className="mt-4 flex justify-end">
+                                                        {
+                                                            AILoading ? <></> :
+                                                                voiceLoading ? (
+                                                                    <div className="loaderSmall" style={{ paddingLeft: '20px' }}></div>
+                                                                ) : isPlay.index == index ?
+                                                                    !isPlay.play ? (
+                                                                        <Tooltip title="play the voice" arrow>
+                                                                            <button onClick={() => {
+                                                                                handlePlayVoice(massage?.AI?.message, index)
+                                                                            }}>
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="23"
+                                                                                    height="23" fill="currentColor"
+                                                                                    className="bi bi-play-circle"
+                                                                                    viewBox="0 0 16 16">
+                                                                                    <path
+                                                                                        d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                                                                    <path
+                                                                                        d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z" />
+                                                                                </svg>
+                                                                            </button>
+                                                                        </Tooltip>
+                                                                    ) :
+                                                                        <Tooltip title="pause the voice" arrow>
+                                                                            <button onClick={() => {
+                                                                                handlePauseVoice(index)
+                                                                            }}>
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="23"
+                                                                                    height="23" viewBox="0 0 256 256">
+                                                                                    <rect width="256" height="256" fill="none" />
+                                                                                    <circle cx="128" cy="128" r="96" fill="none"
+                                                                                        stroke="#000" stroke-linecap="round"
+                                                                                        stroke-linejoin="round" stroke-width="12" />
+                                                                                    <line x1="104" y1="96" x2="104" y2="160" fill="none"
+                                                                                        stroke="#000" stroke-linecap="round"
+                                                                                        stroke-linejoin="round" stroke-width="12" />
+                                                                                    <line x1="152" y1="96" x2="152" y2="160" fill="none"
+                                                                                        stroke="#000" stroke-linecap="round"
+                                                                                        stroke-linejoin="round" stroke-width="12" />
+                                                                                </svg>
+                                                                            </button>
+                                                                        </Tooltip>
+                                                                    :
                                                                     <Tooltip title="play the voice" arrow>
                                                                         <button onClick={() => {
                                                                             handlePlayVoice(massage?.AI?.message, index)
@@ -459,93 +519,57 @@ export default function Home({ params }) {
                                                                             </svg>
                                                                         </button>
                                                                     </Tooltip>
-                                                                ) :
-                                                                    <Tooltip title="pause the voice" arrow>
-                                                                        <button onClick={() => {
-                                                                            handlePauseVoice(index)
-                                                                        }}>
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="23"
-                                                                                height="23" viewBox="0 0 256 256">
-                                                                                <rect width="256" height="256" fill="none" />
-                                                                                <circle cx="128" cy="128" r="96" fill="none"
-                                                                                    stroke="#000" stroke-linecap="round"
-                                                                                    stroke-linejoin="round" stroke-width="12" />
-                                                                                <line x1="104" y1="96" x2="104" y2="160" fill="none"
-                                                                                    stroke="#000" stroke-linecap="round"
-                                                                                    stroke-linejoin="round" stroke-width="12" />
-                                                                                <line x1="152" y1="96" x2="152" y2="160" fill="none"
-                                                                                    stroke="#000" stroke-linecap="round"
-                                                                                    stroke-linejoin="round" stroke-width="12" />
-                                                                            </svg>
-                                                                        </button>
-                                                                    </Tooltip>
-                                                                :
-                                                                <Tooltip title="play the voice" arrow>
-                                                                    <button onClick={() => {
-                                                                        handlePlayVoice(massage?.AI?.message, index)
-                                                                    }}>
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="23"
-                                                                            height="23" fill="currentColor"
-                                                                            className="bi bi-play-circle"
-                                                                            viewBox="0 0 16 16">
-                                                                            <path
-                                                                                d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
-                                                                            <path
-                                                                                d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z" />
-                                                                        </svg>
-                                                                    </button>
-                                                                </Tooltip>
-                                                    }
+                                                        }
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
-                }
-            </Scrollbars>
-            <div
-                className="py-3 px-5 md:px-10 flex justify-between items-center border-t  border-t-1 border-t-neutral-300">
-                <div className="w-[80%]">
-                    <textarea value={massage} onChange={(e) => {
-                        setMassage(e.target.value)
-                    }} placeholder="Type to add your message..."
-                        className="text-scroll  w-full focus:outline-none py-5 focus:border-none" />
-                </div>
-                <div className="flex gap-4 items-center justify-between">
-                    <AudioRecorder
-                        onRecordingComplete={addAudioElement}
-                        audioTrackConstraints={{
-                            noiseSuppression: true,
-                            echoCancellation: true,
-                        }}
-                        onNotAllowedOrFound={(err) => console.table(err)}
-                        downloadFileExtension="mp3"
-                        mediaRecorderOptions={{
-                            audioBitsPerSecond: 128000,
-                        }} />
-                    <button>
-                        {
-                            user_type == "admin"?
-                            <AiOutlinePaperClip className="text-[#C9C9C9] text-[1.6rem]" 
-                                onClick={() => {setOpen(true)}}
-                            />:<></>
-                        }
-                    </button>
-                    <button disabled={massage === "" || AILoading} onClick={handleSendMassage}
-                        className="disabled:bg-[#EAFFF6] hover:bg-[#EAFFF6] bg-mainGreen px-3 py-3 rounded-[0.5rem] border border-solid border-2 border-[#ECEEF5]">
-                        <div className="w-6">
-                            <Image src="/send.svg" alt="costumer" width={0}
-                                height={0}
-                                sizes="100vw"
-                                style={{ width: '100%', height: 'auto' }} />
-                        </div>
-                    </button>
-                </div>
-            </div>
-            <div>
+                        ))
+                    }
+                </Scrollbars>
+                <div
+                    className="py-3 px-5 md:px-10 flex justify-between items-center border-t  border-t-1 border-t-neutral-300">
+                    <div className="w-[80%]">
+                        <textarea value={massage} onChange={(e) => {
+                            setMassage(e.target.value)
+                        }} placeholder="Type to add your message..."
+                            className="text-scroll  w-full focus:outline-none py-5 focus:border-none" />
+                    </div>
+                    <div className="flex gap-4 items-center justify-between">
+                        <AudioRecorder
+                            onRecordingComplete={addAudioElement}
+                            audioTrackConstraints={{
+                                noiseSuppression: true,
+                                echoCancellation: true,
+                            }}
+                            onNotAllowedOrFound={(err) => console.table(err)}
+                            downloadFileExtension="mp3"
+                            mediaRecorderOptions={{
+                                audioBitsPerSecond: 128000,
+                            }} />
+                        <button>
+                            {
+                                user_type == "admin" ?
+                                    <AiOutlinePaperClip className="text-[#C9C9C9] text-[1.6rem]"
+                                        onClick={() => { setOpen(true) }}
+                                    /> : <></>
+                            }
+                        </button>
+                        <button disabled={massage === "" || AILoading} onClick={handleSendMassage}
+                            className="disabled:bg-[#EAFFF6] hover:bg-[#EAFFF6] bg-mainGreen px-3 py-3 rounded-[0.5rem] border border-solid border-2 border-[#ECEEF5]">
+                            <div className="w-6">
+                                <Image src="/send.svg" alt="costumer" width={0}
+                                    height={0}
+                                    sizes="100vw"
+                                    style={{ width: '100%', height: 'auto' }} />
+                            </div>
+                        </button>
+                    </div>
+                </div>  
+                <div>
                     <Modal
                         open={open}
                         onClose={handleClose}
@@ -711,6 +735,63 @@ export default function Home({ params }) {
                     </Modal>
                     <ToastContainer />
                 </div>
+            </div>
+            <div className={`${user_type == "admin"?"w-[20%]":"hidden"} border-l-[1px] border-solid border-gray p-[10px] pt-[50px]`}>
+                <Scrollbars autoHide
+                    className="scroll-bar"
+                    autoHideTimeout={500}
+                    autoHideDuration={200}
+                    renderView={renderView}
+                    renderThumbHorizontal={renderThumbHorizontal}
+                    renderThumbVertical={renderThumbVertical}
+                    renderTrackVertical={renderTrackVertical}>
+                    <ul className="overflow-hidden mt-5 flex flex-col gap-2">
+                        {
+                            files?.map((chat, index) => (
+                                <li>
+                                    <div
+                                        className={pathname === "panel/12" ? "px-2 py-4 hover:bg-[#EAFFF6]" : "px-2 py-4 hover:bg-[#EAFFF6]"}>
+                                        {
+
+                                            <div className="flex justify-between">
+                                                <div className="w-[20%] flex justify-center items-start">
+                                                    <div className="w-[70%]">
+                                                        <Image src={getImage(chat.Title)} alt="costumer" width={0}
+                                                            height={0}
+                                                            sizes="100vw"
+                                                            style={{ width: '100%', height: 'auto' }} />
+                                                    </div>
+                                                </div>
+                                                <div className="w-[60%]">
+                                                    <div className="flex items-center">
+                                                        <h2 className="font-bold text-[0.9rem] text-textGray">
+                                                            {chat.Title}
+                                                        </h2>
+                                                        <span className="ml-2 text-[#8083A3] text-[0.7rem]">{chat.DateCreated.substring(11, 16)}</span>
+                                                    </div>
+                                                    <div className="">
+                                                        <p className="text-[#8083A3] text-[0.8rem]">
+                                                            Lorem Ipsum is simply dummy text of the printing
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-1 w-[15%] flex justify-center items-start">
+                                                    <span
+                                                        className="flex items-center font-bold text-[#8083A3] border border-solid border-2 border-[#ECEEF5] px-2 py-1 text-center rounded">
+                                                        ...
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        }
+
+                                    </div>
+                                </li>
+                            ))
+                        }
+                    </ul>
+                </Scrollbars>
+            </div>
         </div>
+
     )
 }
