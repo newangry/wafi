@@ -737,7 +737,10 @@ export default function Home({ params }) {
                 </div>
             </div>
             <div className={`${user_type == "admin"?"w-[20%]":"hidden"} border-l-[1px] border-solid border-gray p-[10px] pt-[50px]`}>
-                <Scrollbars autoHide
+                {
+                    files.length == 0?
+                    <div textAlign='center'>No files</div>:
+                    <Scrollbars autoHide
                     className="scroll-bar"
                     autoHideTimeout={500}
                     autoHideDuration={200}
@@ -790,6 +793,8 @@ export default function Home({ params }) {
                         }
                     </ul>
                 </Scrollbars>
+                }
+                
             </div>
         </div>
 
