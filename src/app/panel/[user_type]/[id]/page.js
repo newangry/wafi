@@ -34,16 +34,21 @@ export default function Home({ params }) {
     const [robotVoice, setRobotVoice] = useState(false)
     const [isPlay, setIsPlay] = useState({ index: -1, play: false })
     const [voiceLoading, setVoiceLoading] = useState(false)
-    const [emothion, setEmothion] = useState('Talking')
+    const [emotion, setEmotion] = useState('Talking')
     const [answer, setAnswer] = useState("");
     const [open, setOpen] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [uploadLoading, setUploadLoading] = useState(false)
     const [files, setFiles] = useState([])
+    const [runningAudio, setRunningAudio] = useState([]);
+
+    const speechs = [];
+    let statusAudio = false;
 
     useEffect(() => {
         scrollbars.current.scrollToBottom()
     }, [answer]);
+
     const handleAddFile = (event) => {
         const files = event.target.files;
         const updatedSelectedFiles = [...selectedFiles];
@@ -181,32 +186,130 @@ export default function Home({ params }) {
                 });
             const decoder = new TextDecoder();
             const reader = response.body.getReader();
-            // Read the response stream as chunks and append them to the chat log
             let txt = "";
             let length = "";
-
+            let speech_txt = "";
+            setEmotion("Talking")
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
                 txt = txt + decoder.decode(value);
-                console.log(txt)
-                updated_history[updated_history.length - 1].AI.message = txt;
+                speech_txt = speech_txt + decoder.decode(value);
+
+                console.log(decoder.decode(value))
                 length = updated_history.length;
-                setAnswer(txt)
+                if (speech_txt.length > 100) {
+                    setIsPlay({
+                        index: length-1,
+                        play: true
+                    })
+                    speechFromText(speech_txt, length)
+                    speech_txt = ""
+                    setAnswer(txt)
+                    
+                } else {
+                    setAnswer(txt)
+                }
+                updated_history[updated_history.length - 1].AI.message = txt;
                 setChatHistory(updated_history);
             }
-
-            setAILoading(false)
-            handlePlayVoice(txt, length - 1)
+            if (speech_txt.length != 0) {
+                speechFromText(speech_txt, length)
+                speech_txt = ""
+            }
+            const speech = await api.post(`chats/tts?text=${txt}`)
+            updated_history[updated_history.length - 1].AI.speech = speech
+            saveHistory(_message, txt, emotion);
         } catch (e) {
+            console.log(e);
             toast.error("The server error", {
                 position: toast.POSITION.TOP_CENTER
             });
             setAILoading(false)
         }
-
     }
 
+    let isFirst = true;
+
+    const speechFromText = (msg, index) => {
+
+        setIsPlay({
+            index: index,
+            isPlay: true
+        })
+
+        fetch(`${BACKEND_URL}/chats/tts?text=${msg}`,
+            {
+                method: 'post',
+                headers: {
+                    'Authorization': `Bearer ${window.sessionStorage.getItem("access_token")}`,
+                }
+            }).then(function (response) {
+                return response.json();
+            }).then(function (data) {
+                speechs.push(data)
+                if (isFirst) {
+                    playAudio(false)
+                    isFirst = false;
+                    getEmotion(msg) //get emotion
+                }
+            })
+    }
+
+    const getEmotion = (msg) => {
+        try{
+            fetch(`${BACKEND_URL}/chats/get_emotion?text=${msg}`,
+            {
+                method: 'post',
+                headers: {
+                    'Authorization': `Bearer ${window.sessionStorage.getItem("access_token")}`,
+                }
+            }).then(function (response) {
+                return response.json();
+            }).then(function (data) {
+                setEmotion(data);
+            })
+        }catch(e){
+            cosnole.log(e)
+        }
+        
+    }
+
+    const playAudio = (audio) => {
+        if (!audio) {
+            let audio_ = new Audio("data:audio/wav;base64," + speechs[0])
+            audio_.play()
+            playAudio(audio_)
+            setRunningAudio(p => [...p, {audio: audio_, src:"data:audio/wav;base64,"+speechs[0]}])
+            speechs.splice(0, 1);
+        } else {
+            audio.addEventListener('ended', function () {
+                const audio_src = audio.src;
+                const running_audio = JSON.parse(JSON.stringify(runningAudio));
+                let index = 0;
+                running_audio.map((item, _index) => {
+                    if(audio_src == item.src){
+                        index = _index
+                    }
+                })
+                running_audio.splice(index, 1);
+                setRunningAudio(running_audio);
+
+                if (speechs.length > 0) {
+                    let audio_ = new Audio("data:audio/wav;base64," + speechs[0])
+                    audio_.play()
+                    playAudio(audio_)
+                    // runningAudio.push(audio_);
+                    setRunningAudio(p => [...p, {audio: audio_, src:"data:audio/wav;base64,"+speechs[0]}])
+                    speechs.splice(0, 1);
+                } else {
+                    setAILoading(false)
+                    isFirst = true;
+                }
+            });
+        }
+    }
+    
     const handleSendMassageByVoice = async (mag) => {
         getAnswer(mag)
     }
@@ -268,7 +371,6 @@ export default function Home({ params }) {
     }
     const addAudioElement = async (blob) => {
         setAILoading(true)
-
         addLoadingMassageVoice()
 
         let formData = new FormData()
@@ -297,31 +399,24 @@ export default function Home({ params }) {
     }
 
     const handlePlayVoice = async (msg, index) => {
-        setVoiceLoading(true)
         if (index == isPlay.index) {
-            setIsPlay({
+            robotVoice.play();
+            setIsPlay({ 
                 index,
                 play: true
             })
-            robotVoice.play();
         } else {
-            const res = await api.post(`chats/tts?text=${msg}`)
-            let audio = new Audio("data:audio/wav;base64," + res.speech)
-            setEmothion(res.emotion);
-            saveHistory(massage, msg, res.emotion)
+            setVoiceLoading(true)
+            let audio = new Audio("data:audio/wav;base64," + chatHistory[index].AI.speech)
             audio.play()
+            setEmotion(chatHistory[index].AI.emotion);
             setIsPlay({
                 index,
                 play: true
             })
             setRobotVoice(audio)
+            setVoiceLoading(false)
         }
-
-        setVoiceLoading(false)
-    }
-
-    const saveHistory = async (message, ai, emotion) => {
-        const res = await api.post(`chats/save_history?ai=${ai}&message=${message}&emotion=${emotion}&chat_id=${params.id}`)
     }
 
     useEffect(() => {
@@ -336,12 +431,16 @@ export default function Home({ params }) {
         }
     }, [robotVoice])
 
+    const saveHistory = async (message, ai, emotion) => {
+        await api.post(`chats/save_history?ai=${ai}&message=${message}&emotion=${emotion}&chat_id=${params.id}`)
+    }
+
     const handlePauseVoice = (index) => {
-        robotVoice.pause();
-        setIsPlay({
+        setIsPlay({ 
             index,
             play: false
         })
+        robotVoice.pause();
     }
 
     const getFiles = async () => {
@@ -349,14 +448,16 @@ export default function Home({ params }) {
             const res = await api.get(`chats?user_type=admin&chat_id=${params.id}`)
             setFiles(res)
         } catch (err) {
+            console.log(err);
             toast.error("The server error!", {
                 position: toast.POSITION.TOP_CENTER
             });
         }
     }
+
     return (
         <div className='flex lg:flex-row'>
-            <div className={`h-screen ${user_type == 'admin'?'w-[79%]':'w-full'} flex flex-col justify-between`}>
+            <div className={`h-screen ${user_type == 'admin' ? 'w-[79%]' : 'w-full'} flex flex-col justify-between`}>
                 <header
                     className="px-5 md:px-10">
                     <div className="flex justify-center">
@@ -368,8 +469,8 @@ export default function Home({ params }) {
                                         height={0}
                                         sizes="100vw"
                                         style={{ width: '100%', height: 'auto', objectFit: "cover", marginTop: '20px' }} /> :
-                                    EMOTHIONS.filter(item => item == emothion).length > 0 ?
-                                        <Image src={`/Animations/${emothion}.svg`}
+                                    EMOTHIONS.filter(item => item == emotion).length > 0 ?
+                                        <Image src={`/Animations/${emotion}.svg`}
                                             alt="costumer" width={0}
                                             height={0}
                                             sizes="100vw"
@@ -387,7 +488,7 @@ export default function Home({ params }) {
                 <Scrollbars autoHide
                     ref={scrollbars}
                     className="scroll-bar pb-10"
-                    autoHideTimeout={500}
+                autoHideTimeout={500}
                     autoHideDuration={200}
                     renderView={renderView}
                     renderThumbHorizontal={renderThumbHorizontal}
@@ -463,14 +564,16 @@ export default function Home({ params }) {
                                                     </p>
                                                     <div className="mt-4 flex justify-end">
                                                         {
-                                                            AILoading ? <></> :
-                                                                voiceLoading ? (
+                                                            
+                                                            AILoading? (
                                                                     <div className="loaderSmall" style={{ paddingLeft: '20px' }}></div>
                                                                 ) : isPlay.index == index ?
                                                                     !isPlay.play ? (
                                                                         <Tooltip title="play the voice" arrow>
                                                                             <button onClick={() => {
-                                                                                handlePlayVoice(massage?.AI?.message, index)
+                                                                                if(!isPlay.play && !AILoading) {
+                                                                                    handlePlayVoice(massage?.AI?.message, index)
+                                                                                }
                                                                             }}>
                                                                                 <svg xmlns="http://www.w3.org/2000/svg" width="23"
                                                                                     height="23" fill="currentColor"
@@ -506,7 +609,9 @@ export default function Home({ params }) {
                                                                     :
                                                                     <Tooltip title="play the voice" arrow>
                                                                         <button onClick={() => {
-                                                                            handlePlayVoice(massage?.AI?.message, index)
+                                                                            if(!isPlay.play && !AILoading) {
+                                                                                handlePlayVoice(massage?.AI?.message, index)
+                                                                            }
                                                                         }}>
                                                                             <svg xmlns="http://www.w3.org/2000/svg" width="23"
                                                                                 height="23" fill="currentColor"
@@ -558,7 +663,7 @@ export default function Home({ params }) {
                                     /> : <></>
                             }
                         </button>
-                        <button disabled={massage === "" || AILoading} onClick={handleSendMassage}
+                        <button disabled={massage === "" || AILoading || isPlay.play} onClick={handleSendMassage}
                             className="disabled:bg-[#EAFFF6] hover:bg-[#EAFFF6] bg-mainGreen px-3 py-3 rounded-[0.5rem] border border-solid border-2 border-[#ECEEF5]">
                             <div className="w-6">
                                 <Image src="/send.svg" alt="costumer" width={0}
@@ -568,7 +673,7 @@ export default function Home({ params }) {
                             </div>
                         </button>
                     </div>
-                </div>  
+                </div>
                 <div>
                     <Modal
                         open={open}
@@ -736,65 +841,65 @@ export default function Home({ params }) {
                     <ToastContainer />
                 </div>
             </div>
-            <div className={`${user_type == "admin"?"w-[20%]":"hidden"} border-l-[1px] border-solid border-gray p-[10px] pt-[50px]`}>
+            <div className={`${user_type == "admin" ? "w-[20%]" : "hidden"} border-l-[1px] border-solid border-gray p-[10px] pt-[50px]`}>
                 {
-                    files.length == 0?
-                    <div textAlign='center'>No files</div>:
-                    <Scrollbars autoHide
-                    className="scroll-bar"
-                    autoHideTimeout={500}
-                    autoHideDuration={200}
-                    renderView={renderView}
-                    renderThumbHorizontal={renderThumbHorizontal}
-                    renderThumbVertical={renderThumbVertical}
-                    renderTrackVertical={renderTrackVertical}>
-                    <ul className="overflow-hidden mt-5 flex flex-col gap-2">
-                        {
-                            files?.map((chat, index) => (
-                                <li>
-                                    <div
-                                        className={pathname === "panel/12" ? "px-2 py-4 hover:bg-[#EAFFF6]" : "px-2 py-4 hover:bg-[#EAFFF6]"}>
-                                        {
+                    files.length == 0 ?
+                        <div textAlign='center'>No files</div> :
+                        <Scrollbars autoHide
+                            className="scroll-bar"
+                            autoHideTimeout={500}
+                            autoHideDuration={200}
+                            renderView={renderView}
+                            renderThumbHorizontal={renderThumbHorizontal}
+                            renderThumbVertical={renderThumbVertical}
+                            renderTrackVertical={renderTrackVertical}>
+                            <ul className="overflow-hidden mt-5 flex flex-col gap-2">
+                                {
+                                    files?.map((chat, index) => (
+                                        <li>
+                                            <div
+                                                className={pathname === "panel/12" ? "px-2 py-4 hover:bg-[#EAFFF6]" : "px-2 py-4 hover:bg-[#EAFFF6]"}>
+                                                {
 
-                                            <div className="flex justify-between">
-                                                <div className="w-[20%] flex justify-center items-start">
-                                                    <div className="w-[70%]">
-                                                        <Image src={getImage(chat.Title)} alt="costumer" width={0}
-                                                            height={0}
-                                                            sizes="100vw"
-                                                            style={{ width: '100%', height: 'auto' }} />
+                                                    <div className="flex justify-between">
+                                                        <div className="w-[20%] flex justify-center items-start">
+                                                            <div className="w-[70%]">
+                                                                <Image src={getImage(chat.Title)} alt="costumer" width={0}
+                                                                    height={0}
+                                                                    sizes="100vw"
+                                                                    style={{ width: '100%', height: 'auto' }} />
+                                                            </div>
+                                                        </div>
+                                                        <div className="w-[60%]">
+                                                            <div className="flex items-center">
+                                                                <h2 className="font-bold text-[0.9rem] text-textGray">
+                                                                    {chat.Title}
+                                                                </h2>
+                                                                <span className="ml-2 text-[#8083A3] text-[0.7rem]">{chat.DateCreated.substring(11, 16)}</span>
+                                                            </div>
+                                                            <div className="">
+                                                                <p className="text-[#8083A3] text-[0.8rem]">
+                                                                    Lorem Ipsum is simply dummy text of the printing
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-1 w-[15%] flex justify-center items-start">
+                                                            <span
+                                                                className="flex items-center font-bold text-[#8083A3] border border-solid border-2 border-[#ECEEF5] px-2 py-1 text-center rounded">
+                                                                ...
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div className="w-[60%]">
-                                                    <div className="flex items-center">
-                                                        <h2 className="font-bold text-[0.9rem] text-textGray">
-                                                            {chat.Title}
-                                                        </h2>
-                                                        <span className="ml-2 text-[#8083A3] text-[0.7rem]">{chat.DateCreated.substring(11, 16)}</span>
-                                                    </div>
-                                                    <div className="">
-                                                        <p className="text-[#8083A3] text-[0.8rem]">
-                                                            Lorem Ipsum is simply dummy text of the printing
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-1 w-[15%] flex justify-center items-start">
-                                                    <span
-                                                        className="flex items-center font-bold text-[#8083A3] border border-solid border-2 border-[#ECEEF5] px-2 py-1 text-center rounded">
-                                                        ...
-                                                    </span>
-                                                </div>
+                                                }
+
                                             </div>
-                                        }
-
-                                    </div>
-                                </li>
-                            ))
-                        }
-                    </ul>
-                </Scrollbars>
+                                        </li>
+                                    ))
+                                }
+                            </ul>
+                        </Scrollbars>
                 }
-                
+
             </div>
         </div>
 
