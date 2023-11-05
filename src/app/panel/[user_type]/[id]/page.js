@@ -167,6 +167,7 @@ export default function Home({ params }) {
 
     const getAnswer = async (_message) => {
         setAILoading(true)
+        setEmotion("robothead");
         speechs = [];
         let updated_history = JSON.parse(JSON.stringify(addLoadingMassage(_message)))
         const newMassage = _message
