@@ -41,8 +41,8 @@ export default function Home({ params }) {
     const [uploadLoading, setUploadLoading] = useState(false)
     const [files, setFiles] = useState([])
     const [runningAudio, setRunningAudio] = useState([]);
-
-    const speechs = [];
+    const [tempAudio, setTempAudio] = useState([]);
+    let speechs = [];
     let statusAudio = false;
 
     useEffect(() => {
@@ -167,13 +167,15 @@ export default function Home({ params }) {
 
     const getAnswer = async (_message) => {
         setAILoading(true)
+        speechs = [];
         let updated_history = JSON.parse(JSON.stringify(addLoadingMassage(_message)))
         const newMassage = _message
         setMassage("")
-
+        setTempAudio([]);
         let formData = new FormData()
         formData.append("audio", "")
         setAnswer("");
+        setRunningAudio([]);
         try {
             const response = await fetch(`${BACKEND_URL}/chats/new_message?chat_id=${params.id}&input_type=text&output_type=text&new_message=${newMassage}&user_type=${user_type}`,
                 {
@@ -189,7 +191,10 @@ export default function Home({ params }) {
             let txt = "";
             let length = "";
             let speech_txt = "";
-            setEmotion("Talking")
+            setIsPlay({
+                index: updated_history.length - 1,
+                play: true
+            })
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -199,45 +204,39 @@ export default function Home({ params }) {
                 console.log(decoder.decode(value))
                 length = updated_history.length;
                 if (speech_txt.length > 100) {
-                    setIsPlay({
-                        index: length-1,
-                        play: true
-                    })
                     speechFromText(speech_txt, length)
                     speech_txt = ""
                     setAnswer(txt)
-                    
+
                 } else {
                     setAnswer(txt)
                 }
                 updated_history[updated_history.length - 1].AI.message = txt;
                 setChatHistory(updated_history);
             }
+
             if (speech_txt.length != 0) {
                 speechFromText(speech_txt, length)
                 speech_txt = ""
             }
+
             const speech = await api.post(`chats/tts?text=${txt}`)
             updated_history[updated_history.length - 1].AI.speech = speech
+            setChatHistory(updated_history)
             saveHistory(_message, txt, emotion);
+            setAILoading(false)
+
         } catch (e) {
             console.log(e);
             toast.error("The server error", {
                 position: toast.POSITION.TOP_CENTER
             });
-            setAILoading(false)
         }
     }
 
     let isFirst = true;
 
     const speechFromText = (msg, index) => {
-
-        setIsPlay({
-            index: index,
-            isPlay: true
-        })
-
         fetch(`${BACKEND_URL}/chats/tts?text=${msg}`,
             {
                 method: 'post',
@@ -249,6 +248,7 @@ export default function Home({ params }) {
             }).then(function (data) {
                 speechs.push(data)
                 if (isFirst) {
+                    setEmotion("Talking")
                     playAudio(false)
                     isFirst = false;
                     getEmotion(msg) //get emotion
@@ -257,22 +257,22 @@ export default function Home({ params }) {
     }
 
     const getEmotion = (msg) => {
-        try{
+        try {
             fetch(`${BACKEND_URL}/chats/get_emotion?text=${msg}`,
-            {
-                method: 'post',
-                headers: {
-                    'Authorization': `Bearer ${window.sessionStorage.getItem("access_token")}`,
-                }
-            }).then(function (response) {
-                return response.json();
-            }).then(function (data) {
-                setEmotion(data);
-            })
-        }catch(e){
+                {
+                    method: 'post',
+                    headers: {
+                        'Authorization': `Bearer ${window.sessionStorage.getItem("access_token")}`,
+                    }
+                }).then(function (response) {
+                    return response.json();
+                }).then(function (data) {
+                    setEmotion(data);
+                })
+        } catch (e) {
             cosnole.log(e)
         }
-        
+
     }
 
     const playAudio = (audio) => {
@@ -280,7 +280,7 @@ export default function Home({ params }) {
             let audio_ = new Audio("data:audio/wav;base64," + speechs[0])
             audio_.play()
             playAudio(audio_)
-            setRunningAudio(p => [...p, {audio: audio_, src:"data:audio/wav;base64,"+speechs[0]}])
+            setRunningAudio(p => [...p, { audio: audio_, src: "data:audio/wav;base64," + speechs[0] }])
             speechs.splice(0, 1);
         } else {
             audio.addEventListener('ended', function () {
@@ -288,7 +288,7 @@ export default function Home({ params }) {
                 const running_audio = JSON.parse(JSON.stringify(runningAudio));
                 let index = 0;
                 running_audio.map((item, _index) => {
-                    if(audio_src == item.src){
+                    if (audio_src == item.src) {
                         index = _index
                     }
                 })
@@ -297,19 +297,69 @@ export default function Home({ params }) {
 
                 if (speechs.length > 0) {
                     let audio_ = new Audio("data:audio/wav;base64," + speechs[0])
-                    audio_.play()
-                    playAudio(audio_)
-                    // runningAudio.push(audio_);
-                    setRunningAudio(p => [...p, {audio: audio_, src:"data:audio/wav;base64,"+speechs[0]}])
-                    speechs.splice(0, 1);
+                    if (!isPlay.play) {
+                        audio_.play()
+                        playAudio(audio_)
+                        setRunningAudio(p => [...p, { audio: audio_, src: "data:audio/wav;base64," + speechs[0] }])
+                        speechs.splice(0, 1);
+                    }
                 } else {
                     setAILoading(false)
                     isFirst = true;
+                    setIsPlay({
+                        index: -1,
+                        play: false
+                    })
                 }
             });
         }
     }
-    
+
+    const playAudioRemain = (audio) => {
+        const running_audio = JSON.parse(JSON.stringify(runningAudio));
+
+        if (!audio) {
+            let audio_ = new Audio(running_audio[0].src)
+            audio_.play()
+            playAudioRemain(audio_)
+            running_audio.splice(0, 1);
+            setRunningAudio(running_audio);
+            setTempAudio(p => [...p, audio_])
+        } else {
+            audio.addEventListener('ended', function () {
+                const audio_src = audio.src;
+                let index = 0;
+                if (running_audio.length == 0) {
+                    setIsPlay({
+                        index: -1,
+                        play: false
+                    })
+                }
+                if (running_audio.length > 0) {
+                    let audio_ = new Audio(running_audio[0].src)
+                    audio_.play()
+                    playAudio(audio_)
+                    setTempAudio(p => [...p, audio_])
+                    running_audio.map((item, _index) => {
+                        if (audio_src == item.src) {
+                            index = _index
+                        }
+                    })
+
+                    running_audio.splice(index, 1);
+                    setRunningAudio(running_audio);
+                } else {
+                    setAILoading(false)
+                    isFirst = true;
+                    setIsPlay({
+                        index: -1,
+                        play: false
+                    })
+                }
+            });
+        }
+    }
+
     const handleSendMassageByVoice = async (mag) => {
         getAnswer(mag)
     }
@@ -399,23 +449,35 @@ export default function Home({ params }) {
     }
 
     const handlePlayVoice = async (msg, index) => {
-        if (index == isPlay.index) {
-            robotVoice.play();
-            setIsPlay({ 
-                index,
-                play: true
-            })
-        } else {
-            setVoiceLoading(true)
-            let audio = new Audio("data:audio/wav;base64," + chatHistory[index].AI.speech)
-            audio.play()
-            setEmotion(chatHistory[index].AI.emotion);
+        if (index == chatHistory.length - 1 && runningAudio.length > 0) {
+            playAudioRemain(false)
             setIsPlay({
                 index,
                 play: true
             })
-            setRobotVoice(audio)
-            setVoiceLoading(false)
+            setRobotVoice(false);
+        } else {
+            if (
+                index == isPlay.index && robotVoice
+            ) {
+
+                robotVoice.play();
+                setIsPlay({
+                    index,
+                    play: true
+                })
+            } else {
+                setVoiceLoading(true)
+                let audio = new Audio("data:audio/wav;base64," + chatHistory[index].AI.speech)
+                audio.play()
+                setEmotion(chatHistory[index].AI.emotion);
+                setIsPlay({
+                    index,
+                    play: true
+                })
+                setRobotVoice(audio)
+                setVoiceLoading(false)
+            }
         }
     }
 
@@ -436,11 +498,21 @@ export default function Home({ params }) {
     }
 
     const handlePauseVoice = (index) => {
-        setIsPlay({ 
+        runningAudio.map((item) => {
+            item.audio.pause()
+        })
+        tempAudio.map((item) => {
+            item.pause()
+        })
+        setIsPlay({
             index,
             play: false
         })
-        robotVoice.pause();
+        if(robotVoice){
+            
+            robotVoice.pause();
+        }
+
     }
 
     const getFiles = async () => {
@@ -481,14 +553,13 @@ export default function Home({ params }) {
                                             sizes="100vw"
                                             style={{ width: '100%', height: 'auto', objectFit: "cover" }} />
                             }
-
                         </div>
                     </div>
                 </header>
                 <Scrollbars autoHide
                     ref={scrollbars}
                     className="scroll-bar pb-10"
-                autoHideTimeout={500}
+                    autoHideTimeout={500}
                     autoHideDuration={200}
                     renderView={renderView}
                     renderThumbHorizontal={renderThumbHorizontal}
@@ -564,52 +635,15 @@ export default function Home({ params }) {
                                                     </p>
                                                     <div className="mt-4 flex justify-end">
                                                         {
-                                                            
-                                                            AILoading? (
-                                                                    <div className="loaderSmall" style={{ paddingLeft: '20px' }}></div>
-                                                                ) : isPlay.index == index ?
-                                                                    !isPlay.play ? (
-                                                                        <Tooltip title="play the voice" arrow>
-                                                                            <button onClick={() => {
-                                                                                if(!isPlay.play && !AILoading) {
-                                                                                    handlePlayVoice(massage?.AI?.message, index)
-                                                                                }
-                                                                            }}>
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="23"
-                                                                                    height="23" fill="currentColor"
-                                                                                    className="bi bi-play-circle"
-                                                                                    viewBox="0 0 16 16">
-                                                                                    <path
-                                                                                        d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
-                                                                                    <path
-                                                                                        d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z" />
-                                                                                </svg>
-                                                                            </button>
-                                                                        </Tooltip>
-                                                                    ) :
-                                                                        <Tooltip title="pause the voice" arrow>
-                                                                            <button onClick={() => {
-                                                                                handlePauseVoice(index)
-                                                                            }}>
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="23"
-                                                                                    height="23" viewBox="0 0 256 256">
-                                                                                    <rect width="256" height="256" fill="none" />
-                                                                                    <circle cx="128" cy="128" r="96" fill="none"
-                                                                                        stroke="#000" stroke-linecap="round"
-                                                                                        stroke-linejoin="round" stroke-width="12" />
-                                                                                    <line x1="104" y1="96" x2="104" y2="160" fill="none"
-                                                                                        stroke="#000" stroke-linecap="round"
-                                                                                        stroke-linejoin="round" stroke-width="12" />
-                                                                                    <line x1="152" y1="96" x2="152" y2="160" fill="none"
-                                                                                        stroke="#000" stroke-linecap="round"
-                                                                                        stroke-linejoin="round" stroke-width="12" />
-                                                                                </svg>
-                                                                            </button>
-                                                                        </Tooltip>
-                                                                    :
+
+                                                            AILoading ? (
+                                                                // <div className="loaderSmall" style={{ paddingLeft: '20px' }}></div>
+                                                                <></>
+                                                            ) : isPlay.index == index ?
+                                                                !isPlay.play ? (
                                                                     <Tooltip title="play the voice" arrow>
                                                                         <button onClick={() => {
-                                                                            if(!isPlay.play && !AILoading) {
+                                                                            if (!isPlay.play && !AILoading) {
                                                                                 handlePlayVoice(massage?.AI?.message, index)
                                                                             }
                                                                         }}>
@@ -624,6 +658,44 @@ export default function Home({ params }) {
                                                                             </svg>
                                                                         </button>
                                                                     </Tooltip>
+                                                                ) :
+                                                                    <Tooltip title="pause the voice" arrow>
+                                                                        <button onClick={() => {
+                                                                            handlePauseVoice(index)
+                                                                        }}>
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="23"
+                                                                                height="23" viewBox="0 0 256 256">
+                                                                                <rect width="256" height="256" fill="none" />
+                                                                                <circle cx="128" cy="128" r="96" fill="none"
+                                                                                    stroke="#000" stroke-linecap="round"
+                                                                                    stroke-linejoin="round" stroke-width="12" />
+                                                                                <line x1="104" y1="96" x2="104" y2="160" fill="none"
+                                                                                    stroke="#000" stroke-linecap="round"
+                                                                                    stroke-linejoin="round" stroke-width="12" />
+                                                                                <line x1="152" y1="96" x2="152" y2="160" fill="none"
+                                                                                    stroke="#000" stroke-linecap="round"
+                                                                                    stroke-linejoin="round" stroke-width="12" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </Tooltip>
+                                                                :
+                                                                <Tooltip title="play the voice" arrow>
+                                                                    <button onClick={() => {
+                                                                        if (!isPlay.play && !AILoading) {
+                                                                            handlePlayVoice(massage?.AI?.message, index)
+                                                                        }
+                                                                    }}>
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="23"
+                                                                            height="23" fill="currentColor"
+                                                                            className="bi bi-play-circle"
+                                                                            viewBox="0 0 16 16">
+                                                                            <path
+                                                                                d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                                                            <path
+                                                                                d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z" />
+                                                                        </svg>
+                                                                    </button>
+                                                                </Tooltip>
                                                         }
                                                     </div>
                                                 </div>
