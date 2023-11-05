@@ -13,7 +13,8 @@ export const EMOTHIONS = [
     "Sob",
     "Talking",
     "Tongue",
-    "Wink"
+    "Wink",
+    "robothead"
 ]
 export const BACKEND_URL = "https://wafi-api.onrender.com";
 // export const BACKEND_URL = "http://localhost:8000";
